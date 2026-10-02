@@ -78,7 +78,7 @@ create table if not exists storage.objects (
   bucket_id text references storage.buckets (id),
   name text not null,
   owner uuid default auth.uid(),
-  owner_id text default auth.uid()::text,
+  owner_id text, -- set by the Storage API from the JWT; no default in Supabase
   metadata jsonb,
   created_at timestamptz default now(),
   unique (bucket_id, name)

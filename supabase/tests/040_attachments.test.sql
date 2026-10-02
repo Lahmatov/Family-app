@@ -24,18 +24,18 @@ insert into public.transactions (id, family_id, kind, amount_minor, currency, ca
 
 -- ---- uploads -----------------------------------------------------------------
 select lives_ok($$
-  insert into storage.objects (bucket_id, name) values ('family-files', current_setting('tests.path_shared'))
+  insert into storage.objects (bucket_id, name, owner_id) values ('family-files', current_setting('tests.path_shared'), tests.id('bob')::text)
 $$, 'adult uploads into own family folder');
-insert into storage.objects (bucket_id, name) values ('family-files', current_setting('tests.path_private'));
+insert into storage.objects (bucket_id, name, owner_id) values ('family-files', current_setting('tests.path_private'), tests.id('bob')::text);
 
 select throws_ok($$
-  insert into storage.objects (bucket_id, name) values ('family-files', tests.id('evefam') || '/transaction/' || gen_random_uuid() || '.jpg')
+  insert into storage.objects (bucket_id, name, owner_id) values ('family-files', tests.id('evefam') || '/transaction/' || gen_random_uuid() || '.jpg', tests.id('bob')::text)
 $$, '42501', null, 'cannot upload into another family''s folder');
 select throws_ok($$
   insert into storage.objects (bucket_id, name, owner_id) values ('family-files', tests.id('fam') || '/transaction/x.jpg', tests.id('alice')::text)
 $$, '42501', null, 'cannot spoof object owner');
 select throws_ok($$
-  insert into storage.objects (bucket_id, name) values ('family-files', 'not-a-uuid/transaction/x.jpg')
+  insert into storage.objects (bucket_id, name, owner_id) values ('family-files', 'not-a-uuid/transaction/x.jpg', tests.id('bob')::text)
 $$, '42501', null, 'malformed path rejected without error leakage');
 
 select is((select count(*)::int from storage.objects), 0, 'unlinked objects are not readable');
