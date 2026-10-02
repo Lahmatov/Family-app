@@ -1,0 +1,29 @@
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.xcodeproj/
+!ios/*.xcodeproj/xcshareddata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved.bak
+
+# Secrets — never commit
+ios/Config/Secrets.xcconfig
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+signing_keys.json
+
+# Supabase
+supabase/.branches
+supabase/.temp
