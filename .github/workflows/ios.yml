@@ -3,9 +3,6 @@ name: iOS app
 # macOS runners are expensive: run only when app code changes, or by hand.
 on:
   push:
-    branches: [main]
-    paths: ["ios/**", "FamilyCore/**", ".github/workflows/ios.yml"]
-  pull_request:
     paths: ["ios/**", "FamilyCore/**", ".github/workflows/ios.yml"]
   workflow_dispatch:
 
