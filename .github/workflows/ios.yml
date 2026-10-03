@@ -1,0 +1,64 @@
+name: iOS app
+
+# macOS runners are expensive (10x minutes on private repositories): run only when app code changes,
+# once per pull request update and on main, or by hand. Not on every push to a branch with an open PR.
+on:
+  pull_request:
+    paths: ["ios/**", "FamilyCore/**", ".github/workflows/ios.yml"]
+  push:
+    branches: [main]
+    paths: ["ios/**", "FamilyCore/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Generate Xcode project
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Pick simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          IPAD=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPad')))")
+          echo "ipad=$IPAD" >> "$GITHUB_OUTPUT"
+      - name: Unit + UI tests
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project FamilyApp.xcodeproj -scheme FamilyApp \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO | xcbeautify --renderer github-actions || exit 1
+      - name: UI tests on iPad (sidebar layout)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project FamilyApp.xcodeproj -scheme FamilyApp \
+            -destination "id=${{ steps.sim.outputs.ipad }}" \
+            -only-testing:FamilyAppUITests \
+            -resultBundlePath TestResultsIPad.xcresult \
+            CODE_SIGNING_ALLOWED=NO | xcbeautify --renderer github-actions || exit 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: test-results
+          path: ios/TestResults.xcresult
+          retention-days: 7

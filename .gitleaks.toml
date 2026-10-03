@@ -1,0 +1,20 @@
+[extend]
+useDefault = true
+
+# Two historical false positives of the generic rule, each allowed only for its exact line in its exact file.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "VaultIdentity declares `let privateKey: Curve25519...PrivateKey`: a typed property, not a literal"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^FamilyCore/Sources/FamilyCore/Vault/VaultCrypto\.swift$''']
+regexes = ['''let privateKey: Curve25519\.KeyAgreement\.PrivateKey''']
+
+[[rules.allowlists]]
+description = ".gitleaksignore existed in one commit (history only) and quoted that finding's fingerprint"
+condition = "AND"
+regexTarget = "line"
+paths = ['''^\.gitleaksignore$''']
+regexes = ['''^# False positive: a property declaration \(`let privateKey: Curve25519''', '''^[0-9a-f]{40}:FamilyCore/Sources/FamilyCore/Vault/VaultCrypto\.swift:generic-api-key:113$''']

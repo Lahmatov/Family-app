@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Actions are pinned to commit SHAs; Dependabot keeps the SHA and the version comment current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  # FamilyCore (swift-crypto). The app's own packages are declared in ios/project.yml (XcodeGen), which
+  # Dependabot cannot read: bump supabase-swift and swift-crypto there by hand when FamilyCore updates land.
+  - package-ecosystem: swift
+    directory: /FamilyCore
+    schedule:
+      interval: weekly
