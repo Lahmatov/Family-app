@@ -860,8 +860,11 @@ final class LiveTripService: TripServicing {
     }
 
     func setDone(_ item: TripItem, done: Bool) async throws {
-        try await run { try await self.client.from("trip_items").update(["is_done": done])
-            .eq("id", value: item.id).execute() }
+        // An update RLS filters out changes zero rows without an error: report it instead of showing it as done.
+        let changed: [TripItem] = try await run {
+            try await self.client.from("trip_items").update(["is_done": done]).eq("id", value: item.id).select().execute().value
+        }
+        guard !changed.isEmpty else { throw AppError.forbidden }
     }
 
     func delete(_ trip: Trip) async throws {
@@ -977,8 +980,10 @@ final class LiveTaskService: TaskServicing {
     }
 
     func setStatus(_ task: FamilyTask, _ status: TaskStatus) async throws {
-        try await run { try await self.client.from("tasks").update(["status": status.rawValue])
-            .eq("id", value: task.id).execute() }
+        let changed: [FamilyTask] = try await run {
+            try await self.client.from("tasks").update(["status": status.rawValue]).eq("id", value: task.id).select().execute().value
+        }
+        guard !changed.isEmpty else { throw AppError.forbidden }
     }
 
     func setAssignee(_ task: FamilyTask, _ assigneeId: UUID?) async throws {
@@ -991,8 +996,10 @@ final class LiveTaskService: TaskServicing {
             }
             enum CodingKeys: String, CodingKey { case assignee_id }
         }
-        try await run { try await self.client.from("tasks").update(Patch(assignee_id: assigneeId))
-            .eq("id", value: task.id).execute() }
+        let changed: [FamilyTask] = try await run {
+            try await self.client.from("tasks").update(Patch(assignee_id: assigneeId)).eq("id", value: task.id).select().execute().value
+        }
+        guard !changed.isEmpty else { throw AppError.forbidden }
     }
 
     func addComment(familyId: UUID, taskId: UUID, body: String) async throws {

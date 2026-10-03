@@ -74,21 +74,25 @@ private struct ImportWebView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {}
 
-    /// Keeps the person on the portal: only https, and the main page may only move within the same site.
+    /// Keeps the person on the portal: only https, and the main page may only move to the site it started on
+    /// (the same host without "www.", or one of its subdomains). Comparing "the last two labels" would let
+    /// `.com.pt` and other public suffixes pass for one site.
     final class Coordinator: NSObject, WKNavigationDelegate {
-        let startSite: String
+        let site: String
 
         init(startHost: String) {
-            startSite = Self.site(of: startHost)
+            let host = startHost.lowercased()
+            site = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
         }
 
-        static func site(of host: String) -> String {
-            host.lowercased().split(separator: ".").suffix(2).joined(separator: ".")
+        func isSameSite(_ host: String) -> Bool {
+            let host = host.lowercased()
+            return !site.isEmpty && (host == site || host.hasSuffix("." + site))
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
             guard let url = action.request.url, url.scheme == "https" || url.scheme == "about" else { return .cancel }
-            if action.targetFrame?.isMainFrame == true, url.scheme == "https", Self.site(of: url.host() ?? "") != startSite {
+            if action.targetFrame?.isMainFrame == true, url.scheme == "https", !isSameSite(url.host() ?? "") {
                 return .cancel
             }
             return .allow

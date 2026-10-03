@@ -259,13 +259,19 @@ struct AddListingView: View {
     private func apply(_ draft: ListingDraft) {
         imported = true
         if title.isEmpty { title = draft.title }
-        if let minor = draft.priceMinor {
+        // Portals list euros: never relabel the number with another currency (no conversion happens here).
+        if let minor = draft.priceMinor, draft.currency == model.family.baseCurrency {
             price = minor % 100 == 0 ? String(minor / 100) : String(format: "%lld.%02lld", minor / 100, minor % 100)
         }
         if let area = draft.areaM2 { self.area = "\(area)" }
         if let rooms = draft.rooms { self.rooms = String(rooms) }
-        if let found = draft.address { address = found }
-        if let lat = draft.latitude, let lng = draft.longitude { importedPlace = (address, lat, lng) }
+        if let found = draft.address?.trimmingCharacters(in: .whitespacesAndNewlines), !found.isEmpty { address = found }
+        // Coordinates belong to the address the page gave (or to no address at all); a new import replaces older ones.
+        if let lat = draft.latitude, let lng = draft.longitude {
+            importedPlace = (draft.address?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "", lat, lng)
+        } else {
+            importedPlace = nil
+        }
     }
 
     private func save() {
@@ -292,7 +298,7 @@ struct AddListingView: View {
         invalid = nil
         Task {
             await action.run {
-                if let known = importedPlace, known.address == new.address {
+                if let known = importedPlace, known.address == (new.address ?? "") {
                     new.lat = known.lat
                     new.lng = known.lng
                 } else if let address = new.address,

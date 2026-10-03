@@ -77,6 +77,9 @@ final class ListingPageParserTests: XCTestCase {
         XCTAssertEqual(ListingPageParser.priceFromText("250.000€"), 25_000_000)
         XCTAssertEqual(ListingPageParser.priceFromText("T2 250.000 €"), 25_000_000, "the 2 of T2 is not part of the price")
         XCTAssertNil(ListingPageParser.priceFromText("sem preço, 75 m²"))
+        XCTAssertEqual(ListingPageParser.priceFromText("2.500 €/m², total 450.000 €"), 45_000_000, "a price per m² is skipped")
+        XCTAssertNil(ListingPageParser.priceFromText("2.500 €/m2"))
+        XCTAssertEqual(ListingPageParser.priceFromText("€ 450.000 (€ 2.500/m²)"), 45_000_000)
     }
 
     func testForeignCurrencyAndNonsenseAreIgnored() {

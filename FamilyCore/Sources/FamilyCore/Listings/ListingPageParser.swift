@@ -5,6 +5,8 @@ import Foundation
 public struct ListingDraft: Equatable, Sendable {
     public var title = ""
     public var priceMinor: Int64?
+    /// What `priceMinor` is in. Portuguese portals list euros; the caller must not relabel it with another currency.
+    public let currency = CurrencyCode.eur
     public var areaM2: Decimal?
     /// Bedrooms by Portuguese typology (T3 = 3), not the total number of rooms.
     public var rooms: Int?
@@ -207,13 +209,16 @@ public enum ListingPageParser {
         let number = #"(\d{1,3}(?:[ .   ]\d{3})+|\d+)(?:,(\d{1,2}))?"#
         let leading = #"(?<![\p{L}\d])"#
         for pattern in [leading + number + #"\s*(?:€|eur\b)"#, #"(?:€|eur\b)\s*"# + number] {
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
-                  let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
-                  let whole = Range(match.range(at: 1), in: text) else { continue }
-            let digits = text[whole].filter(\.isNumber)
-            var cents = "00"
-            if let fraction = Range(match.range(at: 2), in: text) { cents = (text[fraction] + "0").prefix(2).description }
-            if let value = Int64(digits + cents), value > 0, value < 100_000_000_000 { return value }
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { continue }
+            for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+                guard let whole = Range(match.range(at: 1), in: text), let end = Range(match.range, in: text)?.upperBound else { continue }
+                // "2.500 €/m²" is a price per square metre, not the price of the property.
+                if text[end...].drop(while: { $0 == " " }).hasPrefix("/") { continue }
+                let digits = text[whole].filter(\.isNumber)
+                var cents = "00"
+                if let fraction = Range(match.range(at: 2), in: text) { cents = (text[fraction] + "0").prefix(2).description }
+                if let value = Int64(digits + cents), value > 0, value < 100_000_000_000 { return value }
+            }
         }
         return nil
     }

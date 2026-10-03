@@ -10153,19 +10153,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No advertising, no analytics, no tracking. Your data is not sold and is not passed on except to the services needed to run the app (hosting and email)."
+            "value": "No advertising, no analytics, no tracking. Your data is not sold and is not passed on except to the services needed to run the app: hosting, email, and Apple's address lookup (the text of an apartment address is sent to Apple to place it on the map)."
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sem publicidade, sem análises, sem rastreio. Os dados não são vendidos nem cedidos, exceto aos serviços necessários ao funcionamento (alojamento e email)."
+            "value": "Sem publicidade, sem análises, sem rastreio. Os dados não são vendidos nem cedidos, exceto aos serviços necessários ao funcionamento: alojamento, email e a pesquisa de moradas da Apple (o texto da morada de uma casa é enviado à Apple para a colocar no mapa)."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нет рекламы, аналитики и слежки. Данные не продаются и не передаются никому, кроме сервисов, нужных для работы приложения (хостинг и почта)."
+            "value": "Нет рекламы, аналитики и слежки. Данные не продаются и не передаются никому, кроме сервисов, нужных для работы приложения: хостинг, почта и поиск адреса у Apple (текст адреса квартиры отправляется Apple, чтобы поставить точку на карте)."
           }
         }
       }
