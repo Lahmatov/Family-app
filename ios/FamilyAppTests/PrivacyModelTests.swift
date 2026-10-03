@@ -2,8 +2,37 @@ import FamilyCore
 import XCTest
 @testable import FamilyApp
 
+private final class FlakyPrivacyService: PrivacyServicing, @unchecked Sendable {
+    private(set) var deleteCalls = 0
+    let failures: Int
+    init(failures: Int) { self.failures = failures }
+    func exportData() async throws -> Data { Data() }
+    func erasurePlan() async throws -> ErasurePlan { ErasurePlan(blockers: [], files: []) }
+    func removeFiles(_ files: [ErasurePlan.File]) async throws {}
+    func deleteAccount() async throws {
+        deleteCalls += 1
+        if deleteCalls <= failures { throw AppError.network }
+    }
+}
+
 @MainActor
 final class PrivacyModelTests: XCTestCase {
+    func testErasureRetriesAfterANetworkDropOnceFilesAreGone() async {
+        let service = FlakyPrivacyService(failures: 1)
+        let erased = await PrivacyModel(service: service).erase()
+        XCTAssertTrue(erased)
+        XCTAssertEqual(service.deleteCalls, 2)
+    }
+
+    func testErasureGivesUpAfterThreeNetworkFailures() async {
+        let service = FlakyPrivacyService(failures: 10)
+        let model = PrivacyModel(service: service)
+        let erased = await model.erase()
+        XCTAssertFalse(erased)
+        XCTAssertEqual(service.deleteCalls, 3)
+        XCTAssertEqual(model.error, .network)
+    }
+
     func testErasureSignsOutTheServerSession() async throws {
         let store = InMemoryStore(signedIn: true)
         let model = PrivacyModel(service: InMemoryPrivacyService(store: store))

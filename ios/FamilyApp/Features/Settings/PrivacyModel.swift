@@ -37,11 +37,24 @@ final class PrivacyModel {
             blockers = plan.blockers
             guard plan.blockers.isEmpty else { return false }
             try await service.removeFiles(plan.files)
-            try await service.deleteAccount()
+            try await deleteAccountRetryingOnNetworkErrors()
             return true
         } catch {
             self.error = (error as? AppError) ?? .unknown
             return false
+        }
+    }
+
+    /// The files are already gone when this runs, so a dropped connection must not strand the account: try again a
+    /// few times before giving up (anything but a network error is final).
+    private func deleteAccountRetryingOnNetworkErrors(attempts: Int = 3) async throws {
+        for attempt in 1...attempts {
+            do {
+                try await service.deleteAccount()
+                return
+            } catch AppError.network where attempt < attempts {
+                try? await Task.sleep(for: .seconds(attempt))
+            }
         }
     }
 }
