@@ -35,6 +35,28 @@ public struct LocalDate: Hashable, Sendable, Comparable, Codable, CustomStringCo
         String(format: "%04d-%02d-%02d", year, month, day)
     }
 
+    /// Calendar-month arithmetic; the day is clamped (Jan 31 + 1 month = Feb 28/29).
+    public func adding(months: Int) -> LocalDate? {
+        let target = YearMonth(self).adding(months: months)
+        return LocalDate(year: target.year, month: target.month, day: min(day, target.numberOfDays))
+    }
+
+    public func adding(days: Int) -> LocalDate {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let base = calendar.date(from: DateComponents(year: year, month: month, day: day))!
+        return LocalDate(calendar.date(byAdding: .day, value: days, to: base)!, timeZone: calendar.timeZone)
+    }
+
+    /// Whole days from `self` to `other` (negative if `other` is earlier).
+    public func days(until other: LocalDate) -> Int {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let a = calendar.date(from: DateComponents(year: year, month: month, day: day))!
+        let b = calendar.date(from: DateComponents(year: other.year, month: other.month, day: other.day))!
+        return calendar.dateComponents([.day], from: a, to: b).day!
+    }
+
     public static func < (lhs: LocalDate, rhs: LocalDate) -> Bool {
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }
