@@ -37,6 +37,8 @@ struct SettingsView: View {
                 Text("settings.language.footer")
             }
             Section {
+                NavigationLink { PrivacyNoticeView() } label: { Label("privacy.notice.title", systemImage: "hand.raised") }
+                    .accessibilityIdentifier("privacyNoticeLink")
                 if let exportURL {
                     ShareLink(item: exportURL) { Label("settings.export.share", systemImage: "square.and.arrow.up") }
                         .accessibilityIdentifier("shareExportButton")

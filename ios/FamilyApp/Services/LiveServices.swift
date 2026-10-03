@@ -950,9 +950,73 @@ final class LiveSportService: SportServicing {
     }
 }
 
+final class LiveTaskService: TaskServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func tasks(familyId: UUID) async throws -> [FamilyTask] {
+        try await run { try await self.client.from("tasks").select().eq("family_id", value: familyId)
+            .order("created_at").execute().value }
+    }
+
+    func comments(familyId: UUID) async throws -> [TaskComment] {
+        try await run { try await self.client.from("task_comments").select().eq("family_id", value: familyId)
+            .order("created_at").execute().value }
+    }
+
+    func add(familyId: UUID, _ task: NewFamilyTask) async throws {
+        struct Row: Encodable {
+            let family_id: UUID; let title: String; let description: String?; let assignee_id: UUID?; let due_on: LocalDate?
+        }
+        try await run { try await self.client.from("tasks").insert(Row(
+            family_id: familyId, title: task.title, description: task.description, assignee_id: task.assigneeId,
+            due_on: task.dueOn)).execute() }
+    }
+
+    func setStatus(_ task: FamilyTask, _ status: TaskStatus) async throws {
+        try await run { try await self.client.from("tasks").update(["status": status.rawValue])
+            .eq("id", value: task.id).execute() }
+    }
+
+    func setAssignee(_ task: FamilyTask, _ assigneeId: UUID?) async throws {
+        // `nil` must reach the database as an explicit null, which a synthesised Encodable would leave out.
+        struct Patch: Encodable {
+            let assignee_id: UUID?
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(assignee_id, forKey: .assignee_id)
+            }
+            enum CodingKeys: String, CodingKey { case assignee_id }
+        }
+        try await run { try await self.client.from("tasks").update(Patch(assignee_id: assigneeId))
+            .eq("id", value: task.id).execute() }
+    }
+
+    func addComment(familyId: UUID, taskId: UUID, body: String) async throws {
+        struct Row: Encodable { let task_id: UUID; let family_id: UUID; let body: String }
+        try await run { try await self.client.from("task_comments").insert(
+            Row(task_id: taskId, family_id: familyId, body: body)).execute() }
+    }
+
+    func delete(_ task: FamilyTask) async throws {
+        // RLS lets only the author or an admin delete; a filtered delete removes zero rows without an error.
+        let removed: [FamilyTask] = try await run {
+            try await self.client.from("tasks").delete().eq("id", value: task.id).select().execute().value
+        }
+        guard !removed.isEmpty else { throw AppError.forbidden }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing, TripServicing, PrivacyServicing, SportServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing, TripServicing, PrivacyServicing, SportServicing, TaskServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -1058,4 +1122,11 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
     func sports(familyId: UUID) async throws -> [ChildSport] { throw AppError.invalidConfiguration }
     func add(familyId: UUID, _ sport: NewChildSport) async throws { throw AppError.invalidConfiguration }
     func delete(_ sport: ChildSport) async throws { throw AppError.invalidConfiguration }
+    func tasks(familyId: UUID) async throws -> [FamilyTask] { throw AppError.invalidConfiguration }
+    func comments(familyId: UUID) async throws -> [TaskComment] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, _ task: NewFamilyTask) async throws { throw AppError.invalidConfiguration }
+    func setStatus(_ task: FamilyTask, _ status: TaskStatus) async throws { throw AppError.invalidConfiguration }
+    func setAssignee(_ task: FamilyTask, _ assigneeId: UUID?) async throws { throw AppError.invalidConfiguration }
+    func addComment(familyId: UUID, taskId: UUID, body: String) async throws { throw AppError.invalidConfiguration }
+    func delete(_ task: FamilyTask) async throws { throw AppError.invalidConfiguration }
 }

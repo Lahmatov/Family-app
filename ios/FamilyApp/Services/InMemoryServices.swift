@@ -38,6 +38,8 @@ actor InMemoryStore {
     var tripRows: [Trip] = []
     var tripItemRows: [TripItem] = []
     var sportRows: [ChildSport] = []
+    var taskRows: [FamilyTask] = []
+    var taskCommentRows: [TaskComment] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -347,6 +349,41 @@ actor InMemoryStore {
         sportRows.removeAll { $0.id == sport.id }
     }
 
+    /// Everyone but guests (children included), like the `tasks` policies.
+    func requireMember(_ familyId: UUID) throws {
+        try requireMFA()
+        guard role(in: familyId)?.isAtLeast(.child) == true else { throw AppError.forbidden }
+    }
+
+    func addTask(familyId: UUID, _ new: NewFamilyTask) throws {
+        try requireMember(familyId)
+        if let assignee = new.assigneeId, !(members[familyId] ?? []).contains(where: { $0.userId == assignee }) {
+            throw AppError.unknown
+        }
+        taskRows.append(FamilyTask(id: UUID(), familyId: familyId, title: new.title, description: new.description,
+                                   status: .todo, assigneeId: new.assigneeId, dueOn: new.dueOn, createdBy: userId))
+    }
+
+    func updateTask(_ task: FamilyTask, _ change: (inout FamilyTask) -> Void) throws {
+        try requireMember(task.familyId)
+        guard let index = taskRows.firstIndex(where: { $0.id == task.id }) else { throw AppError.notFound }
+        change(&taskRows[index])
+    }
+
+    func addTaskComment(familyId: UUID, taskId: UUID, body: String) throws {
+        try requireMember(familyId)
+        guard taskRows.contains(where: { $0.id == taskId && $0.familyId == familyId }),
+              !body.trimmingCharacters(in: .whitespaces).isEmpty else { throw AppError.forbidden }
+        taskCommentRows.append(TaskComment(id: UUID(), taskId: taskId, body: body, createdBy: userId, createdAt: Date()))
+    }
+
+    func deleteTask(_ task: FamilyTask) throws {
+        try requireMember(task.familyId)
+        guard task.createdBy == userId || role(in: task.familyId) == .admin else { throw AppError.forbidden }
+        taskRows.removeAll { $0.id == task.id }
+        taskCommentRows.removeAll { $0.taskId == task.id }
+    }
+
     func deleteLoan(_ loan: Loan) throws {
         try requireAdult(loan.familyId)
         loanRows.removeAll { $0.id == loan.id }
@@ -579,5 +616,31 @@ final class InMemorySportService: SportServicing {
     }
     func add(familyId: UUID, _ sport: NewChildSport) async throws { try await store.addSport(familyId: familyId, sport) }
     func delete(_ sport: ChildSport) async throws { try await store.deleteSport(sport) }
+}
+
+final class InMemoryTaskService: TaskServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func tasks(familyId: UUID) async throws -> [FamilyTask] {
+        try await store.requireMember(familyId)
+        return await store.taskRows.filter { $0.familyId == familyId }
+    }
+    func comments(familyId: UUID) async throws -> [TaskComment] {
+        try await store.requireMember(familyId)
+        let ids = await Set(store.taskRows.filter { $0.familyId == familyId }.map(\.id))
+        return await store.taskCommentRows.filter { ids.contains($0.taskId) }
+    }
+    func add(familyId: UUID, _ task: NewFamilyTask) async throws { try await store.addTask(familyId: familyId, task) }
+    func setStatus(_ task: FamilyTask, _ status: TaskStatus) async throws {
+        try await store.updateTask(task) { $0.status = status }
+    }
+    func setAssignee(_ task: FamilyTask, _ assigneeId: UUID?) async throws {
+        try await store.updateTask(task) { $0.assigneeId = assigneeId }
+    }
+    func addComment(familyId: UUID, taskId: UUID, body: String) async throws {
+        try await store.addTaskComment(familyId: familyId, taskId: taskId, body: body)
+    }
+    func delete(_ task: FamilyTask) async throws { try await store.deleteTask(task) }
 }
 #endif

@@ -49,6 +49,7 @@ struct Services: Sendable {
     let trips: any TripServicing
     let privacy: any PrivacyServicing
     let sports: any SportServicing
+    let tasks: any TaskServicing
     let vault: any VaultServicing
     let vaultIdentities: any VaultIdentityStoring
 
@@ -72,6 +73,7 @@ struct Services: Sendable {
                 trips: LiveTripService(client: client),
                 privacy: LivePrivacyService(client: client),
                 sports: LiveSportService(client: client),
+                tasks: LiveTaskService(client: client),
                 vault: LiveVaultService(client: client),
                 vaultIdentities: KeychainVaultIdentityStore()
             )
@@ -94,6 +96,7 @@ struct Services: Sendable {
                         trips: InMemoryTripService(store: store),
                         privacy: InMemoryPrivacyService(store: store),
                         sports: InMemorySportService(store: store),
+                        tasks: InMemoryTaskService(store: store),
                         vault: InMemoryVaultService(backend: InMemoryVaultBackend(), userId: store.userId),
                         vaultIdentities: InMemoryIdentityStore())
     }
@@ -105,7 +108,7 @@ struct Services: Sendable {
                                         children: MisconfiguredService(), goals: MisconfiguredService(),
                                         notes: MisconfiguredService(), loans: MisconfiguredService(),
                                         trips: MisconfiguredService(), privacy: MisconfiguredService(),
-                                        sports: MisconfiguredService(),
+                                        sports: MisconfiguredService(), tasks: MisconfiguredService(),
                                         vault: MisconfiguredVault(), vaultIdentities: MisconfiguredVault())
 }
 
@@ -147,6 +150,16 @@ protocol NoteServicing: Sendable {
     func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws
     func update(_ note: Note) async throws
     func delete(_ note: Note) async throws
+}
+
+protocol TaskServicing: Sendable {
+    func tasks(familyId: UUID) async throws -> [FamilyTask]
+    func comments(familyId: UUID) async throws -> [TaskComment]
+    func add(familyId: UUID, _ task: NewFamilyTask) async throws
+    func setStatus(_ task: FamilyTask, _ status: TaskStatus) async throws
+    func setAssignee(_ task: FamilyTask, _ assigneeId: UUID?) async throws
+    func addComment(familyId: UUID, taskId: UUID, body: String) async throws
+    func delete(_ task: FamilyTask) async throws
 }
 
 protocol SportServicing: Sendable {

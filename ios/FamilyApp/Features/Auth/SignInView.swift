@@ -108,6 +108,8 @@ struct SignUpView: View {
                             }
                         }
                         .disabled(name.isEmpty || email.isEmpty || !passwordIssues.isEmpty || action.isRunning)
+                    } footer: {
+                        NavigationLink("privacy.notice.link") { PrivacyNoticeView() }
                     }
                 }
             }

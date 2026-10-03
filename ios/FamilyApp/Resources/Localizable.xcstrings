@@ -9443,6 +9443,886 @@
           }
         }
       }
+    },
+    "tasks.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasks"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarefas"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Задачи"
+          }
+        }
+      }
+    },
+    "tasks.noAccess": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasks are for family members"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As tarefas são para membros da família"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Задачи видны членам семьи"
+          }
+        }
+      }
+    },
+    "tasks.empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No tasks yet"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ainda sem tarefas"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Задач пока нет"
+          }
+        }
+      }
+    },
+    "tasks.empty.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add what needs doing and discuss it here."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicione o que é preciso fazer e discuta aqui."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавьте, что нужно сделать, и обсуждайте прямо здесь."
+          }
+        }
+      }
+    },
+    "tasks.add": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New task"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova tarefa"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Новая задача"
+          }
+        }
+      }
+    },
+    "tasks.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What needs doing"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que é preciso fazer"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что нужно сделать"
+          }
+        }
+      }
+    },
+    "tasks.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details (optional)"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detalhes (opcional)"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробности (необязательно)"
+          }
+        }
+      }
+    },
+    "tasks.assignee": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assigned to"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Responsável"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исполнитель"
+          }
+        }
+      }
+    },
+    "tasks.unassigned": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ninguém"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Никто"
+          }
+        }
+      }
+    },
+    "tasks.hasDue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due date"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prazo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Срок"
+          }
+        }
+      }
+    },
+    "tasks.due": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prazo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Срок"
+          }
+        }
+      }
+    },
+    "tasks.status": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Статус"
+          }
+        }
+      }
+    },
+    "tasks.status.todo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To do"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Por fazer"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "К выполнению"
+          }
+        }
+      }
+    },
+    "tasks.status.doing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In progress"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Em curso"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В работе"
+          }
+        }
+      }
+    },
+    "tasks.status.done": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feito"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово"
+          }
+        }
+      }
+    },
+    "tasks.complete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as done"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marcar como feita"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отметить выполненной"
+          }
+        }
+      }
+    },
+    "tasks.reopen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reopen"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reabrir"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вернуть в работу"
+          }
+        }
+      }
+    },
+    "tasks.discussion": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discussion"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discussão"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обсуждение"
+          }
+        }
+      }
+    },
+    "tasks.comment": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write a comment"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escreva um comentário"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напишите комментарий"
+          }
+        }
+      }
+    },
+    "tasks.send": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить"
+          }
+        }
+      }
+    },
+    "tasks.gone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This task no longer exists"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta tarefa já não existe"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Этой задачи больше нет"
+          }
+        }
+      }
+    },
+    "privacy.notice.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy notice"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso de privacidade"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Уведомление о конфиденциальности"
+          }
+        }
+      }
+    },
+    "privacy.notice.link": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How we handle your data"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Como tratamos os seus dados"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как мы обращаемся с данными"
+          }
+        }
+      }
+    },
+    "privacy.notice.who.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Who is responsible"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quem é responsável"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кто отвечает за данные"
+          }
+        }
+      }
+    },
+    "privacy.notice.who.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This app keeps your family's information for your family only. You and the other members decide what to add. The app's operator hosts it as a service provider and does not use your data for advertising or analytics."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A aplicação guarda a informação da sua família apenas para a sua família. Você e os outros membros decidem o que adicionar. O operador aloja a aplicação como prestador de serviços e não usa os dados para publicidade ou análises."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приложение хранит данные вашей семьи только для вашей семьи. Что добавлять, решаете вы и другие участники. Оператор приложения предоставляет хостинг как поставщик услуги и не использует данные для рекламы или аналитики."
+          }
+        }
+      }
+    },
+    "privacy.notice.what.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is stored"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O que é guardado"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что хранится"
+          }
+        }
+      }
+    },
+    "privacy.notice.what.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your email and name, the members of your family and their roles, and whatever your family adds: expenses and receipts, children's profiles and health records (vaccinations, growth, illnesses), goals, notes, loans, trips, tasks, sports schedules, apartment listings and vault documents."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O seu email e nome, os membros da família e os seus papéis, e tudo o que a família adicionar: despesas e recibos, perfis de crianças e registos de saúde (vacinas, crescimento, doenças), objetivos, notas, créditos, viagens, tarefas, horários desportivos, anúncios de casas e documentos do cofre."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш email и имя, участники семьи и их роли, а также всё, что добавляет семья: расходы и чеки, профили детей и медицинские записи (прививки, рост, болезни), цели, заметки, кредиты, поездки, задачи, спортивное расписание, квартиры и документы сейфа."
+          }
+        }
+      }
+    },
+    "privacy.notice.access.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Who can see it"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quem pode ver"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Кто это видит"
+          }
+        }
+      }
+    },
+    "privacy.notice.access.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only members of your family, by role: finances and children's data are visible to adults and admins, personal items only to their author. Vault documents are encrypted on your device; only people holding the key can read them, and the server cannot."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apenas os membros da família, consoante o papel: finanças e dados das crianças são vistos por adultos e administradores, itens pessoais só pelo autor. Os documentos do cofre são cifrados no seu dispositivo: só quem tem a chave os lê, o servidor não."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Только члены вашей семьи, в зависимости от роли: финансы и данные детей видят взрослые и админы, личные записи только автор. Документы сейфа шифруются на вашем устройстве: читать их могут только владельцы ключа, сервер не может."
+          }
+        }
+      }
+    },
+    "privacy.notice.where.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where it is kept"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onde é guardado"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Где хранится"
+          }
+        }
+      }
+    },
+    "privacy.notice.where.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On servers in the European Union (Frankfurt), encrypted in transit. Reminders for payments and vaccinations are created on your phone and are not sent to anyone."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Em servidores na União Europeia (Frankfurt), cifrados em trânsito. Os lembretes de pagamentos e vacinas são criados no seu telemóvel e não são enviados a ninguém."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На серверах в Европейском союзе (Франкфурт), при передаче шифруется. Напоминания о платежах и прививках создаются на вашем телефоне и никому не отправляются."
+          }
+        }
+      }
+    },
+    "privacy.notice.sharing.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not shared"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não é partilhado"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не передаётся"
+          }
+        }
+      }
+    },
+    "privacy.notice.sharing.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No advertising, no analytics, no tracking. Your data is not sold and is not passed on except to the services needed to run the app (hosting and email)."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem publicidade, sem análises, sem rastreio. Os dados não são vendidos nem cedidos, exceto aos serviços necessários ao funcionamento (alojamento e email)."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет рекламы, аналитики и слежки. Данные не продаются и не передаются никому, кроме сервисов, нужных для работы приложения (хостинг и почта)."
+          }
+        }
+      }
+    },
+    "privacy.notice.rights.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your rights"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os seus direitos"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваши права"
+          }
+        }
+      }
+    },
+    "privacy.notice.rights.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can download everything you can see (Settings, Export my data) and delete your account (Settings, Delete my account). You can correct or remove entries in the app. You may also complain to the data protection authority; in Portugal that is the CNPD."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pode descarregar tudo o que vê (Definições, Exportar os meus dados) e eliminar a conta (Definições, Eliminar a minha conta). Pode corrigir ou remover registos na aplicação. Pode ainda apresentar queixa à autoridade de proteção de dados; em Portugal, a CNPD."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вы можете скачать всё, что видите (Настройки, «Выгрузить мои данные»), и удалить аккаунт (Настройки, «Удалить мой аккаунт»). Записи можно исправлять и удалять в приложении. Вы также вправе пожаловаться в орган по защите данных; в Португалии это CNPD."
+          }
+        }
+      }
+    },
+    "privacy.notice.keep.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How long"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durante quanto tempo"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как долго"
+          }
+        }
+      }
+    },
+    "privacy.notice.keep.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Until you or your family delete it. When you delete your account your personal data is removed; what you added for the family stays with the family without your name. Backups can keep deleted data for a limited time until they are replaced."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Até que você ou a família os eliminem. Ao eliminar a conta, os seus dados pessoais são removidos; o que adicionou para a família fica com a família sem o seu nome. As cópias de segurança podem conservar dados eliminados por tempo limitado até serem substituídas."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока вы или семья не удалите. При удалении аккаунта ваши личные данные удаляются; то, что вы добавили для семьи, остаётся у семьи без вашего имени. В резервных копиях удалённые данные могут храниться ограниченное время, пока копии не заменятся."
+          }
+        }
+      }
+    },
+    "privacy.notice.children.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Children"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crianças"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Дети"
+          }
+        }
+      }
+    },
+    "privacy.notice.children.body": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Children's information is added by their parents or guardians. Health records are visible to adults of the family only."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A informação das crianças é adicionada pelos pais ou tutores. Os registos de saúde são visíveis apenas para os adultos da família."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Данные детей добавляют их родители или опекуны. Медицинские записи видят только взрослые семьи."
+          }
+        }
+      }
+    },
+    "privacy.notice.updated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last updated: 3 October 2026"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última atualização: 3 de outubro de 2026"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Обновлено: 3 октября 2026"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

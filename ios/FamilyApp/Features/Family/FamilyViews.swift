@@ -156,6 +156,12 @@ struct FamilyView: View {
                 }
                 Section {
                     NavigationLink {
+                        TasksHomeView()
+                    } label: {
+                        Label("tasks.title", systemImage: "checklist")
+                    }
+                    .accessibilityIdentifier("tasksLink")
+                    NavigationLink {
                         NotesHomeView()
                     } label: {
                         Label("notes.title", systemImage: "note.text")
