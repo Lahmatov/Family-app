@@ -563,9 +563,82 @@ final class LiveListingService: ListingServicing {
     }
 }
 
+// MARK: - Children
+
+final class LiveChildService: ChildServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func children(familyId: UUID) async throws -> [Child] {
+        try await run { try await self.client.from("children").select().eq("family_id", value: familyId)
+            .order("birth_date").execute().value }
+    }
+
+    func vaccinations(childId: UUID) async throws -> [ChildVaccination] {
+        try await run { try await self.client.from("child_vaccinations").select().eq("child_id", value: childId)
+            .execute().value }
+    }
+
+    func measurements(childId: UUID) async throws -> [Measurement] {
+        try await run { try await self.client.from("child_measurements").select().eq("child_id", value: childId)
+            .order("measured_on", ascending: false).execute().value }
+    }
+
+    func illnesses(childId: UUID) async throws -> [Illness] {
+        try await run { try await self.client.from("child_illnesses").select().eq("child_id", value: childId)
+            .order("started_on", ascending: false).execute().value }
+    }
+
+    func add(familyId: UUID, name: String, birthDate: LocalDate, sex: ChildSex, bloodType: String?, allergies: String?) async throws {
+        struct Row: Encodable {
+            let family_id: UUID; let name: String; let birth_date: LocalDate
+            let sex: ChildSex; let blood_type: String?; let allergies: String?
+        }
+        try await run { try await self.client.from("children").insert(Row(
+            family_id: familyId, name: name, birth_date: birthDate, sex: sex, blood_type: bloodType,
+            allergies: allergies)).execute() }
+    }
+
+    func record(familyId: UUID, childId: UUID, vaccine: String, dose: Int, on day: LocalDate) async throws {
+        struct Row: Encodable {
+            let child_id: UUID; let family_id: UUID; let vaccine_code: String; let dose: Int; let given_on: LocalDate
+        }
+        try await run { try await self.client.from("child_vaccinations").insert(Row(
+            child_id: childId, family_id: familyId, vaccine_code: vaccine, dose: dose, given_on: day)).execute() }
+    }
+
+    func measure(familyId: UUID, childId: UUID, on day: LocalDate, heightMm: Int?, weightG: Int?) async throws {
+        struct Row: Encodable {
+            let child_id: UUID; let family_id: UUID; let measured_on: LocalDate
+            let height_mm: Int?; let weight_g: Int?
+        }
+        try await run { try await self.client.from("child_measurements").insert(Row(
+            child_id: childId, family_id: familyId, measured_on: day, height_mm: heightMm, weight_g: weightG)).execute() }
+    }
+
+    func addIllness(familyId: UUID, childId: UUID, title: String, startedOn: LocalDate) async throws {
+        struct Row: Encodable {
+            let child_id: UUID; let family_id: UUID; let title: String; let started_on: LocalDate
+        }
+        try await run { try await self.client.from("child_illnesses").insert(Row(
+            child_id: childId, family_id: familyId, title: title, started_on: startedOn)).execute() }
+    }
+
+    func delete(_ child: Child) async throws {
+        try await run { try await self.client.from("children").delete().eq("id", value: child.id).execute() }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -616,4 +689,21 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
     func addCriterion(familyId: UUID, name: String, weight: Int) async throws { throw AppError.invalidConfiguration }
     func addComment(familyId: UUID, listingId: UUID, body: String) async throws { throw AppError.invalidConfiguration }
     func delete(_ listing: Listing) async throws { throw AppError.invalidConfiguration }
+    func children(familyId: UUID) async throws -> [Child] { throw AppError.invalidConfiguration }
+    func vaccinations(childId: UUID) async throws -> [ChildVaccination] { throw AppError.invalidConfiguration }
+    func measurements(childId: UUID) async throws -> [Measurement] { throw AppError.invalidConfiguration }
+    func illnesses(childId: UUID) async throws -> [Illness] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, name: String, birthDate: LocalDate, sex: ChildSex, bloodType: String?, allergies: String?) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func record(familyId: UUID, childId: UUID, vaccine: String, dose: Int, on: LocalDate) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func measure(familyId: UUID, childId: UUID, on: LocalDate, heightMm: Int?, weightG: Int?) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func addIllness(familyId: UUID, childId: UUID, title: String, startedOn: LocalDate) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func delete(_ child: Child) async throws { throw AppError.invalidConfiguration }
 }

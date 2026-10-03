@@ -78,7 +78,7 @@ final class OnboardingUITests: XCTestCase {
     func testSignOut() {
         let app = launch(["-signed-in"])
         XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
-        app.tabBars.buttons.element(boundBy: 3).tap()
+        app.tabBars.buttons.element(boundBy: 4).tap()
         app.buttons["signOutButton"].tap()
         XCTAssertTrue(app.textFields["emailField"].waitForExistence(timeout: 5))
     }

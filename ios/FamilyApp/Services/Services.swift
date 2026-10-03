@@ -42,6 +42,7 @@ struct Services: Sendable {
     let family: any FamilyServicing
     let budget: any BudgetServicing
     let listings: any ListingServicing
+    let children: any ChildServicing
 
     static func make(arguments: [String] = ProcessInfo.processInfo.arguments) -> Services {
         #if DEBUG
@@ -55,7 +56,8 @@ struct Services: Sendable {
                 auth: LiveAuthService(client: client),
                 family: LiveFamilyService(client: client),
                 budget: LiveBudgetService(client: client),
-                listings: LiveListingService(client: client)
+                listings: LiveListingService(client: client),
+                children: LiveChildService(client: client)
             )
         } catch {
             return .misconfigured
@@ -68,13 +70,15 @@ struct Services: Sendable {
         return Services(auth: InMemoryAuthService(store: store),
                         family: InMemoryFamilyService(store: store),
                         budget: InMemoryBudgetService(store: store),
-                        listings: InMemoryListingService(store: store))
+                        listings: InMemoryListingService(store: store),
+                        children: InMemoryChildService(store: store))
     }
     #endif
 
     /// Used when Info.plist has no valid Supabase settings: every call fails clearly.
     static let misconfigured = Services(auth: MisconfiguredService(), family: MisconfiguredService(),
-                                        budget: MisconfiguredService(), listings: MisconfiguredService())
+                                        budget: MisconfiguredService(), listings: MisconfiguredService(),
+                                        children: MisconfiguredService())
 }
 
 protocol ListingServicing: Sendable {
@@ -88,4 +92,16 @@ protocol ListingServicing: Sendable {
     func addCriterion(familyId: UUID, name: String, weight: Int) async throws
     func addComment(familyId: UUID, listingId: UUID, body: String) async throws
     func delete(_ listing: Listing) async throws
+}
+
+protocol ChildServicing: Sendable {
+    func children(familyId: UUID) async throws -> [Child]
+    func vaccinations(childId: UUID) async throws -> [ChildVaccination]
+    func measurements(childId: UUID) async throws -> [Measurement]
+    func illnesses(childId: UUID) async throws -> [Illness]
+    func add(familyId: UUID, name: String, birthDate: LocalDate, sex: ChildSex, bloodType: String?, allergies: String?) async throws
+    func record(familyId: UUID, childId: UUID, vaccine: String, dose: Int, on: LocalDate) async throws
+    func measure(familyId: UUID, childId: UUID, on: LocalDate, heightMm: Int?, weightG: Int?) async throws
+    func addIllness(familyId: UUID, childId: UUID, title: String, startedOn: LocalDate) async throws
+    func delete(_ child: Child) async throws
 }

@@ -24,6 +24,10 @@ actor InMemoryStore {
     var criteria: [Criterion] = []
     var answers: [ListingAnswer] = []
     var comments: [ListingComment] = []
+    var kids: [Child] = []
+    var vaccinations: [ChildVaccination] = []
+    var measurements: [Measurement] = []
+    var illnesses: [Illness] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -169,6 +173,35 @@ actor InMemoryStore {
         comments.append(ListingComment(id: UUID(), listingId: listingId, body: body, createdBy: userId, createdAt: Date()))
     }
 
+    func addChild(familyId: UUID, name: String, birthDate: LocalDate, sex: ChildSex, bloodType: String?, allergies: String?) throws {
+        try requireAdult(familyId)
+        kids.append(Child(id: UUID(), familyId: familyId, name: name, birthDate: birthDate, sex: sex,
+                          bloodType: bloodType, allergies: allergies))
+    }
+
+    func recordVaccination(familyId: UUID, childId: UUID, vaccine: String, dose: Int, on day: LocalDate) throws {
+        try requireAdult(familyId)
+        guard !vaccinations.contains(where: { $0.childId == childId && $0.vaccineCode == vaccine && $0.dose == dose }) else {
+            throw AppError.conflict
+        }
+        vaccinations.append(ChildVaccination(id: UUID(), childId: childId, vaccineCode: vaccine, dose: dose, givenOn: day))
+    }
+
+    func addMeasurement(familyId: UUID, childId: UUID, on day: LocalDate, heightMm: Int?, weightG: Int?) throws {
+        try requireAdult(familyId)
+        measurements.append(Measurement(id: UUID(), childId: childId, measuredOn: day, heightMm: heightMm, weightG: weightG))
+    }
+
+    func addIllness(familyId: UUID, childId: UUID, title: String, startedOn: LocalDate) throws {
+        try requireAdult(familyId)
+        illnesses.append(Illness(id: UUID(), childId: childId, title: title, startedOn: startedOn, endedOn: nil))
+    }
+
+    func deleteChild(_ child: Child) throws {
+        guard role(in: child.familyId) == .admin else { throw AppError.forbidden }
+        kids.removeAll { $0.id == child.id }
+    }
+
     func deleteListing(_ listing: Listing) throws {
         try requireAdult(listing.familyId)
         listings.removeAll { $0.id == listing.id }
@@ -266,5 +299,30 @@ final class InMemoryListingService: ListingServicing {
         try await store.addComment(familyId: familyId, listingId: listingId, body: body)
     }
     func delete(_ listing: Listing) async throws { try await store.deleteListing(listing) }
+}
+final class InMemoryChildService: ChildServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func children(familyId: UUID) async throws -> [Child] {
+        try await store.requireAdult(familyId)
+        return await store.kids.filter { $0.familyId == familyId }
+    }
+    func vaccinations(childId: UUID) async throws -> [ChildVaccination] { await store.vaccinations.filter { $0.childId == childId } }
+    func measurements(childId: UUID) async throws -> [Measurement] { await store.measurements.filter { $0.childId == childId } }
+    func illnesses(childId: UUID) async throws -> [Illness] { await store.illnesses.filter { $0.childId == childId } }
+    func add(familyId: UUID, name: String, birthDate: LocalDate, sex: ChildSex, bloodType: String?, allergies: String?) async throws {
+        try await store.addChild(familyId: familyId, name: name, birthDate: birthDate, sex: sex, bloodType: bloodType, allergies: allergies)
+    }
+    func record(familyId: UUID, childId: UUID, vaccine: String, dose: Int, on day: LocalDate) async throws {
+        try await store.recordVaccination(familyId: familyId, childId: childId, vaccine: vaccine, dose: dose, on: day)
+    }
+    func measure(familyId: UUID, childId: UUID, on day: LocalDate, heightMm: Int?, weightG: Int?) async throws {
+        try await store.addMeasurement(familyId: familyId, childId: childId, on: day, heightMm: heightMm, weightG: weightG)
+    }
+    func addIllness(familyId: UUID, childId: UUID, title: String, startedOn: LocalDate) async throws {
+        try await store.addIllness(familyId: familyId, childId: childId, title: title, startedOn: startedOn)
+    }
+    func delete(_ child: Child) async throws { try await store.deleteChild(child) }
 }
 #endif
