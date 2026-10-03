@@ -19,7 +19,8 @@ enum SupabaseClientFactory {
             supabaseURL: url,
             supabaseKey: key,
             options: SupabaseClientOptions(
-                auth: .init(redirectToURL: URL(string: "familyapp://auth-callback"), flowType: .pkce)
+                auth: .init(storage: DeviceOnlyKeychainStorage(),
+                            redirectToURL: URL(string: "familyapp://auth-callback"), flowType: .pkce)
             )
         )
     }

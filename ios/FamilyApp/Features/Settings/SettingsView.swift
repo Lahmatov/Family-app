@@ -17,7 +17,11 @@ struct SettingsView: View {
                     Label("settings.faceId", systemImage: "faceid")
                 }
             } footer: {
-                Text("settings.faceId.footer")
+                if lock.protectionUnavailable {
+                    Text("settings.faceId.unavailable").foregroundStyle(.orange)
+                } else {
+                    Text("settings.faceId.footer")
+                }
             }
             Section {
                 Button {

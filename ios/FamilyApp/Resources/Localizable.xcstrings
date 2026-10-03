@@ -5255,6 +5255,28 @@
         }
       }
     },
+    "settings.faceId.unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This iPhone has no passcode, so the app lock has no effect. Set a passcode in iOS Settings."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este iPhone não tem código, por isso o bloqueio da aplicação não tem efeito. Defina um código nas Definições do iOS."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "На этом iPhone не задан код-пароль, поэтому блокировка приложения не действует. Задайте код-пароль в настройках iOS."
+          }
+        }
+      }
+    },
     "settings.language": {
       "localizations": {
         "en": {

@@ -5,10 +5,10 @@ import XCTest
 @testable import FamilyApp
 
 private final class StubAuthenticator: DeviceAuthenticating, @unchecked Sendable {
-    var result: Bool
+    var result: DeviceAuthResult
     private(set) var calls = 0
-    init(result: Bool) { self.result = result }
-    func authenticate(reason: String) async -> Bool {
+    init(result: DeviceAuthResult) { self.result = result }
+    func authenticate(reason: String) async -> DeviceAuthResult {
         calls += 1
         return result
     }
@@ -37,7 +37,7 @@ final class AppLockTests: XCTestCase {
     }
 
     func testLockedOnLaunchAndUnlocksWithBiometrics() async {
-        let auth = StubAuthenticator(result: true)
+        let auth = StubAuthenticator(result: .success)
         let lock = makeLock(auth)
         XCTAssertTrue(lock.isLocked, "the app starts locked")
         await lock.didBecomeActive()
@@ -46,20 +46,20 @@ final class AppLockTests: XCTestCase {
     }
 
     func testFailedBiometricsKeepsLock() async {
-        let lock = makeLock(StubAuthenticator(result: false))
+        let lock = makeLock(StubAuthenticator(result: .failed))
         await lock.didBecomeActive()
         XCTAssertTrue(lock.isLocked)
     }
 
     func testRelocksAfterGracePeriodOnly() async {
-        let auth = StubAuthenticator(result: true)
+        let auth = StubAuthenticator(result: .success)
         let lock = makeLock(auth)
         await lock.didBecomeActive()
 
         lock.didEnterBackground()
         XCTAssertTrue(lock.isObscured, "content hidden for the app switcher snapshot")
         clock.now += 10
-        auth.result = false
+        auth.result = .failed
         await lock.didBecomeActive()
         XCTAssertFalse(lock.isLocked, "short switch away does not re-lock")
         XCTAssertFalse(lock.isObscured)
@@ -70,11 +70,19 @@ final class AppLockTests: XCTestCase {
         XCTAssertTrue(lock.isLocked, "re-locks after the grace period")
     }
 
+    func testDeviceWithoutPasscodeDoesNotLockTheOwnerOut() async {
+        let lock = makeLock(StubAuthenticator(result: .unavailable))
+        XCTAssertFalse(lock.protectionUnavailable)
+        await lock.didBecomeActive()
+        XCTAssertFalse(lock.isLocked, "no passcode on the device: locking would be permanent")
+        XCTAssertTrue(lock.protectionUnavailable, "the UI can warn that the lock has no effect")
+    }
+
     func testDisablingLockPersists() {
-        let lock = makeLock(StubAuthenticator(result: true))
+        let lock = makeLock(StubAuthenticator(result: .success))
         lock.isEnabled = false
         XCTAssertFalse(lock.isLocked)
-        XCTAssertFalse(makeLock(StubAuthenticator(result: true)).isLocked)
+        XCTAssertFalse(makeLock(StubAuthenticator(result: .success)).isLocked)
     }
 }
 
@@ -123,5 +131,24 @@ final class ReceiptProcessorTests: XCTestCase {
         let source = try XCTUnwrap(CGImageSourceCreateWithData(upload.data as CFData, nil))
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
         XCTAssertNil(properties[kCGImagePropertyGPSDictionary], "no GPS metadata leaves the device")
+    }
+}
+
+
+final class SessionStorageTests: XCTestCase {
+    func testRoundTripReplaceAndRemove() throws {
+        let storage = DeviceOnlyKeychainStorage(service: "app.family.tests.\(UUID().uuidString)")
+        do {
+            XCTAssertNil(try storage.retrieve(key: "session"))
+            try storage.store(key: "session", value: Data("one".utf8))
+            XCTAssertEqual(try storage.retrieve(key: "session"), Data("one".utf8))
+            try storage.store(key: "session", value: Data("two".utf8))
+            XCTAssertEqual(try storage.retrieve(key: "session"), Data("two".utf8), "store replaces")
+            try storage.remove(key: "session")
+            XCTAssertNil(try storage.retrieve(key: "session"))
+            try storage.remove(key: "session") // removing a missing item is not an error
+        } catch let failure as DeviceOnlyKeychainStorage.Failure {
+            throw XCTSkip("Keychain is not available in this test host (status \(failure.status))")
+        }
     }
 }

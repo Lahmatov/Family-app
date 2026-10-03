@@ -2,25 +2,33 @@ import Foundation
 import LocalAuthentication
 import Observation
 
+enum DeviceAuthResult: Equatable, Sendable {
+    case success
+    case failed
+    /// The device has no passcode / biometrics, so no local lock is possible.
+    case unavailable
+}
+
 /// Abstraction over LocalAuthentication so the lock logic is unit-testable.
 protocol DeviceAuthenticating: Sendable {
-    func authenticate(reason: String) async -> Bool
+    func authenticate(reason: String) async -> DeviceAuthResult
 }
 
 struct LocalDeviceAuthenticator: DeviceAuthenticating {
-    func authenticate(reason: String) async -> Bool {
+    func authenticate(reason: String) async -> DeviceAuthResult {
         let context = LAContext()
         context.localizedFallbackTitle = ""
         var error: NSError?
         // Face ID / Touch ID with device passcode fallback.
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
-            // No passcode set on the device: we cannot protect the app locally.
-            return false
+            // Without a passcode anyone holding the phone is already inside; locking the
+            // app would only lock the owner out for good.
+            return .unavailable
         }
         do {
-            return try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
+            return try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) ? .success : .failed
         } catch {
-            return false
+            return .failed
         }
     }
 }
@@ -33,6 +41,8 @@ final class AppLock {
     private(set) var isLocked: Bool
     /// Hide content while the app is inactive so the app switcher snapshot shows nothing.
     private(set) var isObscured = false
+    /// True when the device cannot authenticate the owner; the lock is then ineffective.
+    private(set) var protectionUnavailable = false
 
     var isEnabled: Bool {
         didSet {
@@ -86,8 +96,15 @@ final class AppLock {
         guard isLocked, !isAuthenticating else { return }
         isAuthenticating = true
         defer { isAuthenticating = false }
-        if await authenticator.authenticate(reason: String(localized: "lock.reason")) {
+        switch await authenticator.authenticate(reason: String(localized: "lock.reason")) {
+        case .success:
             isLocked = false
+            protectionUnavailable = false
+        case .unavailable:
+            isLocked = false
+            protectionUnavailable = true
+        case .failed:
+            break
         }
     }
 }
