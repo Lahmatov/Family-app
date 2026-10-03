@@ -156,6 +156,12 @@ struct FamilyView: View {
                 }
                 Section {
                     NavigationLink {
+                        NotesHomeView()
+                    } label: {
+                        Label("notes.title", systemImage: "note.text")
+                    }
+                    .accessibilityIdentifier("notesLink")
+                    NavigationLink {
                         SettingsView()
                     } label: {
                         Label("tab.settings", systemImage: "gearshape")

@@ -686,9 +686,44 @@ final class LiveGoalService: GoalServicing {
     }
 }
 
+// MARK: - Notes
+
+final class LiveNoteService: NoteServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func notes(familyId: UUID) async throws -> [Note] {
+        try await run { try await self.client.from("notes").select().eq("family_id", value: familyId)
+            .order("updated_at", ascending: false).execute().value }
+    }
+
+    func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws {
+        struct Row: Encodable { let family_id: UUID; let title: String; let body: String; let is_private: Bool }
+        try await run { try await self.client.from("notes").insert(Row(
+            family_id: familyId, title: title, body: body, is_private: isPrivate)).execute() }
+    }
+
+    func update(_ note: Note) async throws {
+        struct Row: Encodable { let title: String; let body: String; let pinned: Bool }
+        try await run { try await self.client.from("notes").update(Row(
+            title: note.title, body: note.body, pinned: note.pinned)).eq("id", value: note.id).execute() }
+    }
+
+    func delete(_ note: Note) async throws {
+        try await run { try await self.client.from("notes").delete().eq("id", value: note.id).execute() }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -761,4 +796,8 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
     func add(familyId: UUID, _ goal: NewGoal) async throws { throw AppError.invalidConfiguration }
     func log(familyId: UUID, goalId: UUID, value: Decimal, on: LocalDate) async throws { throw AppError.invalidConfiguration }
     func delete(_ goal: Goal) async throws { throw AppError.invalidConfiguration }
+    func notes(familyId: UUID) async throws -> [Note] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws { throw AppError.invalidConfiguration }
+    func update(_ note: Note) async throws { throw AppError.invalidConfiguration }
+    func delete(_ note: Note) async throws { throw AppError.invalidConfiguration }
 }

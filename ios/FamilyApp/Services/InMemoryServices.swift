@@ -30,6 +30,7 @@ actor InMemoryStore {
     var illnesses: [Illness] = []
     var goals: [Goal] = []
     var goalEntries: [GoalEntry] = []
+    var notes: [Note] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -218,6 +219,29 @@ actor InMemoryStore {
         goalEntries.removeAll { $0.goalId == goal.id }
     }
 
+    func addNote(familyId: UUID, title: String, body: String, isPrivate: Bool) throws {
+        try requireAdult(familyId)
+        guard !(title.trimmingCharacters(in: .whitespaces).isEmpty && body.trimmingCharacters(in: .whitespaces).isEmpty) else {
+            throw AppError.unknown
+        }
+        notes.append(Note(id: UUID(), familyId: familyId, title: title, body: body, isPrivate: isPrivate,
+                          pinned: false, updatedAt: Date()))
+    }
+
+    func updateNote(_ note: Note) throws {
+        try requireAdult(note.familyId)
+        guard let index = notes.firstIndex(where: { $0.id == note.id }) else { throw AppError.notFound }
+        notes[index].title = note.title
+        notes[index].body = note.body
+        notes[index].pinned = note.pinned
+        notes[index].updatedAt = Date()
+    }
+
+    func deleteNote(_ note: Note) throws {
+        try requireAdult(note.familyId)
+        notes.removeAll { $0.id == note.id }
+    }
+
     func deleteChild(_ child: Child) throws {
         guard role(in: child.familyId) == .admin else { throw AppError.forbidden }
         kids.removeAll { $0.id == child.id }
@@ -360,5 +384,19 @@ final class InMemoryGoalService: GoalServicing {
         try await store.logGoal(familyId: familyId, goalId: goalId, value: value, on: day)
     }
     func delete(_ goal: Goal) async throws { try await store.deleteGoal(goal) }
+}
+final class InMemoryNoteService: NoteServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func notes(familyId: UUID) async throws -> [Note] {
+        try await store.requireAdult(familyId)
+        return await store.notes.filter { $0.familyId == familyId }
+    }
+    func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws {
+        try await store.addNote(familyId: familyId, title: title, body: body, isPrivate: isPrivate)
+    }
+    func update(_ note: Note) async throws { try await store.updateNote(note) }
+    func delete(_ note: Note) async throws { try await store.deleteNote(note) }
 }
 #endif
