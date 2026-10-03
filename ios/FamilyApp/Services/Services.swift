@@ -45,6 +45,7 @@ struct Services: Sendable {
     let children: any ChildServicing
     let goals: any GoalServicing
     let notes: any NoteServicing
+    let loans: any LoanServicing
 
     static func make(arguments: [String] = ProcessInfo.processInfo.arguments) -> Services {
         #if DEBUG
@@ -61,7 +62,8 @@ struct Services: Sendable {
                 listings: LiveListingService(client: client),
                 children: LiveChildService(client: client),
                 goals: LiveGoalService(client: client),
-                notes: LiveNoteService(client: client)
+                notes: LiveNoteService(client: client),
+                loans: LiveLoanService(client: client)
             )
         } catch {
             return .misconfigured
@@ -77,7 +79,8 @@ struct Services: Sendable {
                         listings: InMemoryListingService(store: store),
                         children: InMemoryChildService(store: store),
                         goals: InMemoryGoalService(store: store),
-                        notes: InMemoryNoteService(store: store))
+                        notes: InMemoryNoteService(store: store),
+                        loans: InMemoryLoanService(store: store))
     }
     #endif
 
@@ -85,7 +88,7 @@ struct Services: Sendable {
     static let misconfigured = Services(auth: MisconfiguredService(), family: MisconfiguredService(),
                                         budget: MisconfiguredService(), listings: MisconfiguredService(),
                                         children: MisconfiguredService(), goals: MisconfiguredService(),
-                                        notes: MisconfiguredService())
+                                        notes: MisconfiguredService(), loans: MisconfiguredService())
 }
 
 protocol ListingServicing: Sendable {
@@ -126,4 +129,16 @@ protocol NoteServicing: Sendable {
     func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws
     func update(_ note: Note) async throws
     func delete(_ note: Note) async throws
+}
+
+protocol LoanServicing: Sendable {
+    func loans(familyId: UUID) async throws -> [Loan]
+    func rateChanges(familyId: UUID) async throws -> [LoanRateChangeRow]
+    func extras(familyId: UUID) async throws -> [LoanExtraRow]
+    func payments(familyId: UUID) async throws -> [LoanPaidRow]
+    func add(familyId: UUID, _ loan: NewLoan) async throws
+    func addRateChange(familyId: UUID, loanId: UUID, from: LocalDate, annualRate: Decimal) async throws
+    func addExtra(familyId: UUID, loanId: UUID, on: LocalDate, amountMinor: Int64, strategy: ExtraStrategy) async throws
+    func setPaid(familyId: UUID, loanId: UUID, number: Int, paid: Bool, on: LocalDate) async throws
+    func delete(_ loan: Loan) async throws
 }

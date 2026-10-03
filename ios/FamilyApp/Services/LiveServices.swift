@@ -722,9 +722,77 @@ final class LiveNoteService: NoteServicing {
     }
 }
 
+// MARK: - Loans
+
+final class LiveLoanService: LoanServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func loans(familyId: UUID) async throws -> [Loan] { try await fetch("loans", familyId, order: "created_at") }
+    func rateChanges(familyId: UUID) async throws -> [LoanRateChangeRow] { try await fetch("loan_rate_changes", familyId, order: "effective_from") }
+    func extras(familyId: UUID) async throws -> [LoanExtraRow] { try await fetch("loan_extra_payments", familyId, order: "paid_on") }
+    func payments(familyId: UUID) async throws -> [LoanPaidRow] { try await fetch("loan_payments", familyId, order: "installment_no") }
+
+    func add(familyId: UUID, _ loan: NewLoan) async throws {
+        struct Row: Encodable {
+            let family_id: UUID; let title: String; let lender: String?; let principal_minor: Int64
+            let currency: CurrencyCode; let annual_rate: Decimal; let term_months: Int
+            let first_payment_on: LocalDate; let loan_type: LoanType
+        }
+        try await run { try await self.client.from("loans").insert(Row(
+            family_id: familyId, title: loan.title, lender: loan.lender, principal_minor: loan.principalMinor,
+            currency: loan.currency, annual_rate: loan.annualRate, term_months: loan.termMonths,
+            first_payment_on: loan.firstPaymentOn, loan_type: loan.type)).execute() }
+    }
+
+    func addRateChange(familyId: UUID, loanId: UUID, from: LocalDate, annualRate: Decimal) async throws {
+        struct Row: Encodable { let loan_id: UUID; let family_id: UUID; let effective_from: LocalDate; let annual_rate: Decimal }
+        try await run { try await self.client.from("loan_rate_changes").insert(Row(
+            loan_id: loanId, family_id: familyId, effective_from: from, annual_rate: annualRate)).execute() }
+    }
+
+    func addExtra(familyId: UUID, loanId: UUID, on day: LocalDate, amountMinor: Int64, strategy: ExtraStrategy) async throws {
+        struct Row: Encodable {
+            let loan_id: UUID; let family_id: UUID; let paid_on: LocalDate; let amount_minor: Int64; let strategy: ExtraStrategy
+        }
+        try await run { try await self.client.from("loan_extra_payments").insert(Row(
+            loan_id: loanId, family_id: familyId, paid_on: day, amount_minor: amountMinor, strategy: strategy)).execute() }
+    }
+
+    func setPaid(familyId: UUID, loanId: UUID, number: Int, paid: Bool, on day: LocalDate) async throws {
+        struct Row: Encodable { let loan_id: UUID; let family_id: UUID; let installment_no: Int; let paid_on: LocalDate }
+        try await run {
+            if paid {
+                try await self.client.from("loan_payments").upsert(
+                    Row(loan_id: loanId, family_id: familyId, installment_no: number, paid_on: day),
+                    onConflict: "loan_id,installment_no").execute()
+            } else {
+                try await self.client.from("loan_payments").delete()
+                    .eq("loan_id", value: loanId).eq("installment_no", value: number).execute()
+            }
+        }
+    }
+
+    func delete(_ loan: Loan) async throws {
+        try await run { try await self.client.from("loans").delete().eq("id", value: loan.id).execute() }
+    }
+
+    private func fetch<T: Decodable>(_ table: String, _ familyId: UUID, order: String) async throws -> [T] {
+        try await run { try await self.client.from(table).select().eq("family_id", value: familyId)
+            .order(order).execute().value }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -801,4 +869,19 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
     func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws { throw AppError.invalidConfiguration }
     func update(_ note: Note) async throws { throw AppError.invalidConfiguration }
     func delete(_ note: Note) async throws { throw AppError.invalidConfiguration }
+    func loans(familyId: UUID) async throws -> [Loan] { throw AppError.invalidConfiguration }
+    func rateChanges(familyId: UUID) async throws -> [LoanRateChangeRow] { throw AppError.invalidConfiguration }
+    func extras(familyId: UUID) async throws -> [LoanExtraRow] { throw AppError.invalidConfiguration }
+    func payments(familyId: UUID) async throws -> [LoanPaidRow] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, _ loan: NewLoan) async throws { throw AppError.invalidConfiguration }
+    func addRateChange(familyId: UUID, loanId: UUID, from: LocalDate, annualRate: Decimal) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func addExtra(familyId: UUID, loanId: UUID, on: LocalDate, amountMinor: Int64, strategy: ExtraStrategy) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func setPaid(familyId: UUID, loanId: UUID, number: Int, paid: Bool, on: LocalDate) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func delete(_ loan: Loan) async throws { throw AppError.invalidConfiguration }
 }

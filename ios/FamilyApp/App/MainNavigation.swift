@@ -49,6 +49,8 @@ struct MainNavigation: View {
                 List(AppSection.allCases, selection: Binding(get: { section }, set: { section = $0 ?? section })) { item in
                     Label(item.title, systemImage: item.icon)
                         .tag(item)
+                        // One element for the whole row (VoiceOver reads it once; UI tests tap the row, not the icon).
+                        .accessibilityElement(children: .combine)
                         .accessibilityIdentifier("section-\(item.rawValue)")
                 }
                 .navigationTitle("app.name")

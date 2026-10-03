@@ -162,6 +162,12 @@ struct FamilyView: View {
                     }
                     .accessibilityIdentifier("notesLink")
                     NavigationLink {
+                        LoansHomeView()
+                    } label: {
+                        Label("loans.title", systemImage: "banknote")
+                    }
+                    .accessibilityIdentifier("loansLink")
+                    NavigationLink {
                         SettingsView()
                     } label: {
                         Label("tab.settings", systemImage: "gearshape")

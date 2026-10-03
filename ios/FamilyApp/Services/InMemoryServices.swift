@@ -31,6 +31,10 @@ actor InMemoryStore {
     var goals: [Goal] = []
     var goalEntries: [GoalEntry] = []
     var notes: [Note] = []
+    var loanRows: [Loan] = []
+    var loanRates: [LoanRateChangeRow] = []
+    var loanExtras: [LoanExtraRow] = []
+    var loanPaid: [LoanPaidRow] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -242,6 +246,38 @@ actor InMemoryStore {
         notes.removeAll { $0.id == note.id }
     }
 
+    func addLoan(familyId: UUID, _ new: NewLoan) throws {
+        try requireAdult(familyId)
+        loanRows.append(Loan(id: UUID(), familyId: familyId, title: new.title, lender: new.lender,
+                             principalMinor: new.principalMinor, currency: new.currency, annualRate: new.annualRate,
+                             termMonths: new.termMonths, firstPaymentOn: new.firstPaymentOn, loanType: new.type))
+    }
+
+    func addLoanRate(familyId: UUID, loanId: UUID, from: LocalDate, annualRate: Decimal) throws {
+        try requireAdult(familyId)
+        guard !loanRates.contains(where: { $0.loanId == loanId && $0.effectiveFrom == from }) else { throw AppError.conflict }
+        loanRates.append(LoanRateChangeRow(id: UUID(), loanId: loanId, effectiveFrom: from, annualRate: annualRate))
+    }
+
+    func addLoanExtra(familyId: UUID, loanId: UUID, on day: LocalDate, amountMinor: Int64, strategy: ExtraStrategy) throws {
+        try requireAdult(familyId)
+        loanExtras.append(LoanExtraRow(id: UUID(), loanId: loanId, paidOn: day, amountMinor: amountMinor, strategy: strategy))
+    }
+
+    func setLoanPaid(familyId: UUID, loanId: UUID, number: Int, paid: Bool, on day: LocalDate) throws {
+        try requireAdult(familyId)
+        loanPaid.removeAll { $0.loanId == loanId && $0.installmentNo == number }
+        if paid { loanPaid.append(LoanPaidRow(loanId: loanId, installmentNo: number, paidOn: day)) }
+    }
+
+    func deleteLoan(_ loan: Loan) throws {
+        try requireAdult(loan.familyId)
+        loanRows.removeAll { $0.id == loan.id }
+        loanRates.removeAll { $0.loanId == loan.id }
+        loanExtras.removeAll { $0.loanId == loan.id }
+        loanPaid.removeAll { $0.loanId == loan.id }
+    }
+
     func deleteChild(_ child: Child) throws {
         guard role(in: child.familyId) == .admin else { throw AppError.forbidden }
         kids.removeAll { $0.id == child.id }
@@ -398,5 +434,28 @@ final class InMemoryNoteService: NoteServicing {
     }
     func update(_ note: Note) async throws { try await store.updateNote(note) }
     func delete(_ note: Note) async throws { try await store.deleteNote(note) }
+}
+final class InMemoryLoanService: LoanServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func loans(familyId: UUID) async throws -> [Loan] {
+        try await store.requireAdult(familyId)
+        return await store.loanRows.filter { $0.familyId == familyId }
+    }
+    func rateChanges(familyId: UUID) async throws -> [LoanRateChangeRow] { await store.loanRates }
+    func extras(familyId: UUID) async throws -> [LoanExtraRow] { await store.loanExtras }
+    func payments(familyId: UUID) async throws -> [LoanPaidRow] { await store.loanPaid }
+    func add(familyId: UUID, _ loan: NewLoan) async throws { try await store.addLoan(familyId: familyId, loan) }
+    func addRateChange(familyId: UUID, loanId: UUID, from: LocalDate, annualRate: Decimal) async throws {
+        try await store.addLoanRate(familyId: familyId, loanId: loanId, from: from, annualRate: annualRate)
+    }
+    func addExtra(familyId: UUID, loanId: UUID, on day: LocalDate, amountMinor: Int64, strategy: ExtraStrategy) async throws {
+        try await store.addLoanExtra(familyId: familyId, loanId: loanId, on: day, amountMinor: amountMinor, strategy: strategy)
+    }
+    func setPaid(familyId: UUID, loanId: UUID, number: Int, paid: Bool, on day: LocalDate) async throws {
+        try await store.setLoanPaid(familyId: familyId, loanId: loanId, number: number, paid: paid, on: day)
+    }
+    func delete(_ loan: Loan) async throws { try await store.deleteLoan(loan) }
 }
 #endif
