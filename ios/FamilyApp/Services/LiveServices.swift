@@ -882,9 +882,41 @@ final class LivePrivacyService: PrivacyServicing {
     }
 }
 
+final class LiveSportService: SportServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func sports(familyId: UUID) async throws -> [ChildSport] {
+        try await run { try await self.client.from("child_sports").select().eq("family_id", value: familyId)
+            .order("created_at").execute().value }
+    }
+
+    func add(familyId: UUID, _ sport: NewChildSport) async throws {
+        struct Row: Encodable {
+            let child_id: UUID; let family_id: UUID; let kind: SportKind; let title: String; let location: String?
+            let weekday: Int?; let on_date: LocalDate?; let start_minute: Int; let duration_minutes: Int; let until_date: LocalDate?
+        }
+        try await run { try await self.client.from("child_sports").insert(Row(
+            child_id: sport.childId, family_id: familyId, kind: sport.kind, title: sport.title, location: sport.location,
+            weekday: sport.weekday, on_date: sport.onDate, start_minute: sport.startMinute,
+            duration_minutes: sport.durationMinutes, until_date: sport.untilDate)).execute() }
+    }
+
+    func delete(_ sport: ChildSport) async throws {
+        try await run { try await self.client.from("child_sports").delete().eq("id", value: sport.id).execute() }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing, TripServicing, PrivacyServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing, TripServicing, PrivacyServicing, SportServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -987,4 +1019,7 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
     func erasurePlan() async throws -> ErasurePlan { throw AppError.invalidConfiguration }
     func removeFiles(_ files: [ErasurePlan.File]) async throws { throw AppError.invalidConfiguration }
     func deleteAccount() async throws { throw AppError.invalidConfiguration }
+    func sports(familyId: UUID) async throws -> [ChildSport] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, _ sport: NewChildSport) async throws { throw AppError.invalidConfiguration }
+    func delete(_ sport: ChildSport) async throws { throw AppError.invalidConfiguration }
 }

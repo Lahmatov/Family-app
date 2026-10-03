@@ -174,6 +174,12 @@ struct FamilyView: View {
                     }
                     .accessibilityIdentifier("tripsLink")
                     NavigationLink {
+                        SportsHomeView()
+                    } label: {
+                        Label("sports.title", systemImage: "figure.run")
+                    }
+                    .accessibilityIdentifier("sportsLink")
+                    NavigationLink {
                         VaultHomeView()
                     } label: {
                         Label("vault.title", systemImage: "lock.doc")

@@ -37,6 +37,7 @@ actor InMemoryStore {
     var loanPaid: [LoanPaidRow] = []
     var tripRows: [Trip] = []
     var tripItemRows: [TripItem] = []
+    var sportRows: [ChildSport] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -325,6 +326,24 @@ actor InMemoryStore {
         mfaVerified = false
     }
 
+    func addSport(familyId: UUID, _ new: NewChildSport) throws {
+        try requireAdult(familyId)
+        guard kids.contains(where: { $0.id == new.childId && $0.familyId == familyId }) else { throw AppError.forbidden }
+        let shapeOK = new.kind == .training
+            ? new.weekday != nil && new.onDate == nil
+            : new.onDate != nil && new.weekday == nil && new.untilDate == nil
+        guard shapeOK, (0..<1440).contains(new.startMinute), new.startMinute + new.durationMinutes <= 1440 else { throw AppError.unknown }
+        sportRows.append(ChildSport(id: UUID(), childId: new.childId, kind: new.kind, title: new.title, location: new.location,
+                                    weekday: new.weekday, onDate: new.onDate, startMinute: new.startMinute,
+                                    durationMinutes: new.durationMinutes, untilDate: new.untilDate))
+    }
+
+    func deleteSport(_ sport: ChildSport) throws {
+        guard let child = kids.first(where: { $0.id == sport.childId }) else { throw AppError.notFound }
+        try requireAdult(child.familyId)
+        sportRows.removeAll { $0.id == sport.id }
+    }
+
     func deleteLoan(_ loan: Loan) throws {
         try requireAdult(loan.familyId)
         loanRows.removeAll { $0.id == loan.id }
@@ -544,5 +563,18 @@ final class InMemoryPrivacyService: PrivacyServicing {
     func erasurePlan() async throws -> ErasurePlan { ErasurePlan(blockers: try await store.erasureBlockers(), files: []) }
     func removeFiles(_ files: [ErasurePlan.File]) async throws {}
     func deleteAccount() async throws { try await store.eraseAccount() }
+}
+
+final class InMemorySportService: SportServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func sports(familyId: UUID) async throws -> [ChildSport] {
+        try await store.requireAdult(familyId)
+        let childIds = await Set(store.kids.filter { $0.familyId == familyId }.map(\.id))
+        return await store.sportRows.filter { childIds.contains($0.childId) }
+    }
+    func add(familyId: UUID, _ sport: NewChildSport) async throws { try await store.addSport(familyId: familyId, sport) }
+    func delete(_ sport: ChildSport) async throws { try await store.deleteSport(sport) }
 }
 #endif

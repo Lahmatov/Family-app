@@ -57,6 +57,12 @@ public struct LocalDate: Hashable, Sendable, Comparable, Codable, CustomStringCo
         return calendar.dateComponents([.day], from: a, to: b).day!
     }
 
+    /// ISO weekday: Monday = 1 ... Sunday = 7 (2000-01-03 was a Monday).
+    public var isoWeekday: Int {
+        let offset = LocalDate(year: 2000, month: 1, day: 3)!.days(until: self)
+        return ((offset % 7) + 7) % 7 + 1
+    }
+
     public static func < (lhs: LocalDate, rhs: LocalDate) -> Bool {
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
     }

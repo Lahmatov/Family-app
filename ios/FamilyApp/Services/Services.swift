@@ -48,6 +48,7 @@ struct Services: Sendable {
     let loans: any LoanServicing
     let trips: any TripServicing
     let privacy: any PrivacyServicing
+    let sports: any SportServicing
     let vault: any VaultServicing
     let vaultIdentities: any VaultIdentityStoring
 
@@ -70,6 +71,7 @@ struct Services: Sendable {
                 loans: LiveLoanService(client: client),
                 trips: LiveTripService(client: client),
                 privacy: LivePrivacyService(client: client),
+                sports: LiveSportService(client: client),
                 vault: LiveVaultService(client: client),
                 vaultIdentities: KeychainVaultIdentityStore()
             )
@@ -91,6 +93,7 @@ struct Services: Sendable {
                         loans: InMemoryLoanService(store: store),
                         trips: InMemoryTripService(store: store),
                         privacy: InMemoryPrivacyService(store: store),
+                        sports: InMemorySportService(store: store),
                         vault: InMemoryVaultService(backend: InMemoryVaultBackend(), userId: store.userId),
                         vaultIdentities: InMemoryIdentityStore())
     }
@@ -102,6 +105,7 @@ struct Services: Sendable {
                                         children: MisconfiguredService(), goals: MisconfiguredService(),
                                         notes: MisconfiguredService(), loans: MisconfiguredService(),
                                         trips: MisconfiguredService(), privacy: MisconfiguredService(),
+                                        sports: MisconfiguredService(),
                                         vault: MisconfiguredVault(), vaultIdentities: MisconfiguredVault())
 }
 
@@ -143,6 +147,12 @@ protocol NoteServicing: Sendable {
     func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws
     func update(_ note: Note) async throws
     func delete(_ note: Note) async throws
+}
+
+protocol SportServicing: Sendable {
+    func sports(familyId: UUID) async throws -> [ChildSport]
+    func add(familyId: UUID, _ sport: NewChildSport) async throws
+    func delete(_ sport: ChildSport) async throws
 }
 
 protocol PrivacyServicing: Sendable {
