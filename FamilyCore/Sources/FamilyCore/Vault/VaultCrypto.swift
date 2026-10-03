@@ -110,7 +110,7 @@ public enum VaultCrypto {
 
 /// A person's long-term vault identity: an X25519 key pair created on the device.
 public struct VaultIdentity: @unchecked Sendable {
-    let privateKey: Curve25519.KeyAgreement.PrivateKey
+    let privateKey: Curve25519.KeyAgreement.PrivateKey // gitleaks:allow (a type declaration, not a secret)
 
     public init() { privateKey = Curve25519.KeyAgreement.PrivateKey() }
 

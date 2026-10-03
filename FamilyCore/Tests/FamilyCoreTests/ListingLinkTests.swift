@@ -19,6 +19,13 @@ final class ListingLinkTests: XCTestCase {
         XCTAssertEqual(try ListingLink(parsing: "https://www.century21.pt/comprar/x").source, "century21")
     }
 
+    func testLongUnknownHostFitsTheDatabaseColumn() throws {
+        let host = "imoveis.some-regional-real-estate-agency-with-a-long-name.example.pt"
+        let source = try ListingLink(parsing: "https://\(host)/x").source
+        XCTAssertEqual(source, String(host.prefix(ListingLink.maxSourceLength)))
+        XCTAssertLessThanOrEqual(source.count, 40, "public.listings.source has CHECK (char_length(source) <= 40)")
+    }
+
     func testUnknownSiteUsesHost() throws {
         XCTAssertEqual(try ListingLink(parsing: "https://www.example.com/a").source, "example.com")
     }

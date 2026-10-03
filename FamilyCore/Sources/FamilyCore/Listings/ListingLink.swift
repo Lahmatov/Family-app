@@ -17,6 +17,8 @@ public struct ListingLink: Hashable, Sendable {
         ("zome.pt", "zome"),
     ]
     public static let maxLength = 2048
+    /// Mirrors the CHECK on `public.listings.source`.
+    public static let maxSourceLength = 40
 
     public init(parsing text: String) throws {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -40,7 +42,8 @@ public struct ListingLink: Hashable, Sendable {
         guard let url = parts.url, url.absoluteString.count <= Self.maxLength else { throw ParseError.invalid }
 
         let bare = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-        source = Self.knownSites.first { bare == $0.host || bare.hasSuffix("." + $0.host) }?.key ?? bare
+        source = Self.knownSites.first { bare == $0.host || bare.hasSuffix("." + $0.host) }?.key
+            ?? String(bare.prefix(Self.maxSourceLength))
         self.url = source == "idealista" ? Self.idealistaCanonical(url) ?? url : url
     }
 

@@ -279,6 +279,10 @@ private struct AddVaultDocumentView: View {
             let url = try result.get()
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            // Check the size first: Data(contentsOf:) loads everything, and a huge file would kill the app before
+            // the model's limit applied.
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            guard size > 0, size <= VaultModel.maxFileBytes else { throw AppError.unknown }
             let data = try Data(contentsOf: url)
             let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
             try await model.add(file: data, title: title.trimmingCharacters(in: .whitespaces), kind: kind,

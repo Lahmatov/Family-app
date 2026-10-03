@@ -114,7 +114,7 @@ struct FamilyView: View {
                                         } else {
                                             try await model.services.family.reject(request)
                                         }
-                                        await load()
+                                        try await fetch()
                                     }
                                 }
                             }
@@ -221,17 +221,21 @@ struct FamilyView: View {
             await action.run {
                 let outcome = try await operation(familyId)
                 notice = outcome == .executed ? LocalizedStringKey("approvals.done") : LocalizedStringKey("approvals.waiting")
-                await load()
+                try await fetch()
             }
         }
     }
 
-    private func load() async {
+    /// Fetches without tracking: the callers that already run inside `action.run` use this, because a nested
+    /// `action.run` returns immediately and would leave the lists stale.
+    private func fetch() async throws {
         guard let familyId = membership?.family.id else { return }
-        await action.run {
-            members = try await model.services.family.members(of: familyId)
-            approvals = isAdmin ? try await model.services.family.pendingApprovals(familyId: familyId) : []
-        }
+        members = try await model.services.family.members(of: familyId)
+        approvals = isAdmin ? try await model.services.family.pendingApprovals(familyId: familyId) : []
+    }
+
+    private func load() async {
+        await action.run { try await fetch() }
     }
 }
 

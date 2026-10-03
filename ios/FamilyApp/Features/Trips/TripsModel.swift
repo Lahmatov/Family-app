@@ -12,13 +12,21 @@ final class TripsModel {
 
     let family: Family
     private let service: any TripServicing
+    private let userId: UUID?
+    private let role: MemberRole
     private let today: () -> LocalDate
 
-    init(family: Family, service: any TripServicing, today: @escaping () -> LocalDate = { LocalDate(Date()) }) {
+    init(family: Family, service: any TripServicing, userId: UUID?, role: MemberRole,
+         today: @escaping () -> LocalDate = { LocalDate(Date()) }) {
         self.family = family
         self.service = service
+        self.userId = userId
+        self.role = role
         self.today = today
     }
+
+    /// The database lets only the author or an admin delete a trip; the UI offers it only then.
+    func canDelete(_ trip: Trip) -> Bool { role == .admin || trip.createdBy == userId }
 
     func items(for trip: Trip) -> [TripItem] {
         items.filter { $0.tripId == trip.id }

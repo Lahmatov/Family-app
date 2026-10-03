@@ -8,7 +8,7 @@ final class TripsModelTests: XCTestCase {
         let services = Services.inMemory(startSignedIn: true)
         let family = try await services.family.memberships()[0].family
         let day = LocalDate(today)!
-        return TripsModel(family: family, service: services.trips, today: { day })
+        return TripsModel(family: family, service: services.trips, userId: nil, role: .admin, today: { day })
     }
 
     private func newTrip(budget: Int64 = 150_000) -> NewTrip {
@@ -61,5 +61,19 @@ final class TripsModelTests: XCTestCase {
             XCTFail("end before start must be rejected")
         } catch {}
         XCTAssertTrue(model.trips.isEmpty)
+    }
+
+    func testOnlyTheAuthorOrAnAdminMayDeleteATrip() async throws {
+        let services = Services.inMemory(startSignedIn: true)
+        let family = try await services.family.memberships()[0].family
+        let admin = TripsModel(family: family, service: services.trips, userId: nil, role: .admin)
+        try await admin.add(newTrip())
+        let trip = try XCTUnwrap(admin.trips.first)
+
+        let author = TripsModel(family: family, service: services.trips, userId: trip.createdBy, role: .adult)
+        let other = TripsModel(family: family, service: services.trips, userId: UUID(), role: .adult)
+        XCTAssertTrue(admin.canDelete(trip))
+        XCTAssertTrue(author.canDelete(trip))
+        XCTAssertFalse(other.canDelete(trip), "another adult's trip: the swipe action is not offered")
     }
 }

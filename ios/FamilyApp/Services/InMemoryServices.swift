@@ -157,7 +157,7 @@ actor InMemoryStore {
             throw AppError.conflict
         }
         listings.append(Listing(id: UUID(), familyId: familyId, url: new.link.url, source: new.link.source,
-                                title: new.title, priceMinor: new.priceMinor, currency: .eur, areaM2: new.areaM2,
+                                title: new.title, priceMinor: new.priceMinor, currency: new.currency, areaM2: new.areaM2,
                                 rooms: new.rooms, address: new.address, lat: new.lat, lng: new.lng,
                                 status: .new, createdBy: userId))
     }
@@ -277,7 +277,8 @@ actor InMemoryStore {
         try requireAdult(familyId)
         guard new.endsOn >= new.startsOn, new.budgetMinor >= 0 else { throw AppError.unknown }
         tripRows.append(Trip(id: UUID(), familyId: familyId, title: new.title, destination: new.destination,
-                             startsOn: new.startsOn, endsOn: new.endsOn, currency: new.currency, budgetMinor: new.budgetMinor, notes: nil))
+                             startsOn: new.startsOn, endsOn: new.endsOn, currency: new.currency, budgetMinor: new.budgetMinor, notes: nil,
+                             createdBy: userId))
     }
 
     func addTripItem(familyId: UUID, tripId: UUID, _ new: NewTripItem) throws {
@@ -295,6 +296,8 @@ actor InMemoryStore {
 
     func deleteTrip(_ trip: Trip) throws {
         try requireAdult(trip.familyId)
+        // Same rule as the database policy: the author or an admin.
+        guard trip.createdBy == userId || role(in: trip.familyId) == .admin else { throw AppError.forbidden }
         tripRows.removeAll { $0.id == trip.id }
         tripItemRows.removeAll { $0.tripId == trip.id }
     }

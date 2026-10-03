@@ -14,6 +14,8 @@ jobs:
     container: swift:6.1-noble
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build & test
         working-directory: FamilyCore
         run: swift test --parallel

@@ -272,6 +272,7 @@ struct AddListingView: View {
         guard let parsed = try? ListingLink(parsing: link) else { invalid = "listings.link.invalid"; return }
         let base = model.family.baseCurrency
         var new = NewListing(link: parsed)
+        new.currency = base
         new.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         if !price.isEmpty {
             guard let money = try? Money(parsing: price, currency: base), money.minorUnits > 0 else {

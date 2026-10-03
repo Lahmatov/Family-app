@@ -11,9 +11,11 @@ struct Trip: Codable, Hashable, Sendable, Identifiable {
     let currency: CurrencyCode
     var budgetMinor: Int64
     var notes: String?
+    let createdBy: UUID?
 
     enum CodingKeys: String, CodingKey {
         case id, title, destination, currency, notes
+        case createdBy = "created_by"
         case familyId = "family_id"
         case startsOn = "starts_on"
         case endsOn = "ends_on"

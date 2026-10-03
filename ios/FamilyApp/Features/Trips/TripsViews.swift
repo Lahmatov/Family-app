@@ -6,7 +6,8 @@ struct TripsHomeView: View {
 
     var body: some View {
         if let membership = app.currentMembership, membership.role.isAtLeast(.adult) {
-            TripsListView(model: TripsModel(family: membership.family, service: app.services.trips))
+            TripsListView(model: TripsModel(family: membership.family, service: app.services.trips,
+                                            userId: app.userId, role: membership.role))
                 .id(membership.id)
         } else {
             ContentUnavailableView("trips.noAccess", systemImage: "lock")
@@ -26,10 +27,11 @@ private struct TripsListView: View {
             }
             ForEach(model.trips) { trip in
                 NavigationLink(value: trip.id) { TripRow(trip: trip, countdown: model.countdown(trip), summary: model.summary(trip), locale: locale) }
-            }
-            .onDelete { offsets in
-                let doomed = offsets.map { model.trips[$0] }
-                Task { for trip in doomed { await model.delete(trip) } }
+                    .swipeActions {
+                        if model.canDelete(trip) {
+                            Button("common.delete", role: .destructive) { Task { await model.delete(trip) } }
+                        }
+                    }
             }
         }
         .navigationTitle("trips.title")

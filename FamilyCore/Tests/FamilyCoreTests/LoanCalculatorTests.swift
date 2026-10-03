@@ -116,6 +116,18 @@ final class LoanCalculatorTests: XCTestCase {
         XCTAssertTrue(fresh.overdue.isEmpty)
     }
 
+    func testSettlementRowIsNeitherNextNorOverdue() {
+        let terms = LoanTerms(principal: 120_000, annualRate: 0, termMonths: 12, firstPaymentOn: date("2026-01-01"), type: .annuity)
+        let payoff = ExtraPayment(on: date("2026-02-15"), amount: 110_000, strategy: .reduceTerm)
+        let schedule = LoanCalculator.schedule(terms, extras: [payoff])
+        XCTAssertEqual(schedule.installments.map(\.payment), [10_000, 10_000, 0], "the third row only records the payoff")
+
+        let status = LoanCalculator.status(schedule, paid: [1, 2], today: date("2026-06-01"))
+        XCTAssertNil(status.next, "nothing left to pay")
+        XCTAssertTrue(status.overdue.isEmpty, "a settled loan is not overdue")
+        XCTAssertEqual(status.remainingBalance, 0)
+    }
+
     func testDegenerateInput() {
         XCTAssertTrue(LoanCalculator.schedule(LoanTerms(principal: 0, annualRate: 3, termMonths: 12, firstPaymentOn: date("2026-01-01"), type: .annuity)).installments.isEmpty)
         XCTAssertEqual(LoanCalculator.annuityPayment(0, 3, 12), 0)

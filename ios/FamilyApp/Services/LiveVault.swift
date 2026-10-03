@@ -132,8 +132,10 @@ final class LiveVaultService: VaultServicing {
     }
 
     func deleteItem(familyId: UUID, id: UUID) async throws {
+        // The storage policy authorises the delete through the item row, so the blob goes first; a failure here
+        // stops everything, leaving the item in place to retry, instead of orphaning ciphertext nobody can remove.
+        try await run { _ = try await self.client.storage.from(Self.bucket).remove(paths: [Self.path(familyId, id)]) }
         try await run { try await self.client.from("vault_items").delete().eq("id", value: id).execute() }
-        _ = try? await client.storage.from(Self.bucket).remove(paths: [Self.path(familyId, id)])
     }
 
     /// Lower-case: the database compares the path with `family_id::text`.

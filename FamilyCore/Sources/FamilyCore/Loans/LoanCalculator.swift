@@ -161,7 +161,8 @@ public enum LoanCalculator {
     public static func status(_ schedule: LoanSchedule, paid: Set<Int>, today: LocalDate) -> LoanStatus {
         let rows = schedule.installments
         let lastPaid = rows.last { paid.contains($0.number) }
-        let unpaid = rows.filter { !paid.contains($0.number) }
+        // A settlement row (the balance was cleared by an extra payment) has nothing left to pay.
+        let unpaid = rows.filter { !paid.contains($0.number) && $0.payment > 0 }
         // Extras recorded before the first unpaid instalment already reduced the balance.
         let balance = unpaid.first.map { first in
             (rows.first { $0.number == first.number - 1 }?.balanceAfter ?? principalOf(rows)) - first.extra

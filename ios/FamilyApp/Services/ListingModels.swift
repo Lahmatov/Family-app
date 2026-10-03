@@ -62,6 +62,7 @@ struct ListingComment: Codable, Hashable, Sendable, Identifiable {
 /// Fields the user fills in when adding a listing.
 struct NewListing: Sendable {
     var link: ListingLink
+    var currency: CurrencyCode = .eur
     var title = ""
     var priceMinor: Int64?
     var areaM2: Decimal?

@@ -59,6 +59,13 @@ func mapError(_ error: Error) -> AppError {
     return .unknown
 }
 
+/// PostgREST upserts list every payload column in `DO UPDATE SET`, which needs UPDATE on columns that are
+/// deliberately not granted (keys, family ids), so they fail with 42501 on a real database. Insert instead,
+/// and when the row exists update only its mutable column.
+func insertOrUpdate(insert: @Sendable () async throws -> Void, update: @Sendable () async throws -> Void) async throws {
+    do { try await insert() } catch where mapError(error) == .conflict { try await update() }
+}
+
 // MARK: - Auth
 
 final class LiveAuthService: AuthServicing {
@@ -409,27 +416,35 @@ final class LiveBudgetService: BudgetServicing {
 
     func addTransaction(familyId: UUID, _ input: TransactionDraft.Validated, receipt: ReceiptUpload?) async throws {
         let id = UUID()
+        // Lower-case UUIDs: the database checks the path against family_id::text.
+        let path = receipt.map { "\(familyId.uuidString.lowercased())/transaction/\(UUID().uuidString.lowercased()).\($0.fileExtension)" }
+        var uploaded = false
+        var inserted = false
         do {
+            if let receipt, let path {
+                try await client.storage.from(Self.bucket).upload(
+                    path, data: receipt.data,
+                    options: FileOptions(cacheControl: "private, max-age=0", contentType: receipt.mimeType)
+                )
+                uploaded = true
+            }
             try await client.from("transactions").insert(NewTransaction(
                 id: id, family_id: familyId, kind: input.kind, amount_minor: input.amount.minorUnits,
                 currency: input.amount.currency, fx_rate: input.fxRate, category_id: input.categoryId,
                 occurred_on: input.occurredOn, merchant: input.merchant, note: input.note,
                 paid_by: input.paidBy, is_private: input.isPrivate
             )).execute()
-
-            if let receipt {
-                // Lower-case UUIDs: the database checks the path against family_id::text.
-                let path = "\(familyId.uuidString.lowercased())/transaction/\(UUID().uuidString.lowercased()).\(receipt.fileExtension)"
-                try await client.storage.from(Self.bucket).upload(
-                    path, data: receipt.data,
-                    options: FileOptions(cacheControl: "private, max-age=0", contentType: receipt.mimeType)
-                )
+            inserted = true
+            if let receipt, let path {
                 try await client.from("attachments").insert(NewAttachment(
                     family_id: familyId, entity_id: id, storage_path: path,
                     mime_type: receipt.mimeType, size_bytes: receipt.data.count
                 )).execute()
             }
         } catch {
+            // All or nothing: a retry must not find a half-saved expense (and so create a second one).
+            if inserted { _ = try? await client.from("transactions").delete().eq("id", value: id).execute() }
+            if uploaded, let path { _ = try? await client.storage.from(Self.bucket).remove(paths: [path]) }
             throw mapError(error)
         }
     }
@@ -444,11 +459,16 @@ final class LiveBudgetService: BudgetServicing {
 
     func setBudget(familyId: UUID, categoryId: UUID?, amountMinor: Int64, from month: YearMonth) async throws {
         do {
-            try await client.from("budgets").upsert(
-                NewBudget(family_id: familyId, category_id: categoryId, amount_minor: amountMinor,
-                          valid_from: month.firstDay),
-                onConflict: "family_id,category_id,valid_from"
-            ).execute()
+            try await insertOrUpdate {
+                try await self.client.from("budgets").insert(
+                    NewBudget(family_id: familyId, category_id: categoryId, amount_minor: amountMinor,
+                              valid_from: month.firstDay)).execute()
+            } update: {
+                var query = try self.client.from("budgets").update(["amount_minor": amountMinor])
+                    .eq("family_id", value: familyId).eq("valid_from", value: month.firstDay.description)
+                query = categoryId.map { query.eq("category_id", value: $0) } ?? query.is("category_id", value: nil)
+                try await query.execute()
+            }
         } catch {
             throw mapError(error)
         }
@@ -463,6 +483,7 @@ private struct NewListingRow: Encodable {
     let source: String
     let title: String
     let price_minor: Int64?
+    let currency: CurrencyCode
     let area_m2: Decimal?
     let rooms: Int?
     let address: String?
@@ -509,7 +530,7 @@ final class LiveListingService: ListingServicing {
         try await run {
             try await self.client.from("listings").insert(NewListingRow(
                 family_id: familyId, url: listing.link.url.absoluteString, source: listing.link.source,
-                title: listing.title, price_minor: listing.priceMinor, area_m2: listing.areaM2,
+                title: listing.title, price_minor: listing.priceMinor, currency: listing.currency, area_m2: listing.areaM2,
                 rooms: listing.rooms, address: listing.address, lat: listing.lat, lng: listing.lng)).execute()
         }
     }
@@ -523,9 +544,13 @@ final class LiveListingService: ListingServicing {
 
     func setAnswer(familyId: UUID, listingId: UUID, criterionId: UUID, answer: CriterionAnswer) async throws {
         try await run {
-            try await self.client.from("listing_answers").upsert(
-                AnswerRow(listing_id: listingId, criterion_id: criterionId, family_id: familyId, answer: answer),
-                onConflict: "listing_id,criterion_id").execute()
+            try await insertOrUpdate {
+                try await self.client.from("listing_answers").insert(
+                    AnswerRow(listing_id: listingId, criterion_id: criterionId, family_id: familyId, answer: answer)).execute()
+            } update: {
+                try await self.client.from("listing_answers").update(["answer": answer.rawValue])
+                    .eq("listing_id", value: listingId).eq("criterion_id", value: criterionId).execute()
+            }
         }
     }
 
@@ -673,9 +698,15 @@ final class LiveGoalService: GoalServicing {
             let goal_id: UUID; let family_id: UUID; let value: Decimal; let recorded_on: LocalDate
         }
         // One reading per day: logging again on the same day replaces the earlier value.
-        try await run { try await self.client.from("goal_entries").upsert(
-            Row(goal_id: goalId, family_id: familyId, value: value, recorded_on: day),
-            onConflict: "goal_id,recorded_on").execute() }
+        try await run {
+            try await insertOrUpdate {
+                try await self.client.from("goal_entries").insert(
+                    Row(goal_id: goalId, family_id: familyId, value: value, recorded_on: day)).execute()
+            } update: {
+                try await self.client.from("goal_entries").update(["value": value])
+                    .eq("goal_id", value: goalId).eq("recorded_on", value: day.description).execute()
+            }
+        }
     }
 
     func delete(_ goal: Goal) async throws {
@@ -766,9 +797,10 @@ final class LiveLoanService: LoanServicing {
         struct Row: Encodable { let loan_id: UUID; let family_id: UUID; let installment_no: Int; let paid_on: LocalDate }
         try await run {
             if paid {
+                // Already marked on another device: nothing to change (DO NOTHING needs only INSERT).
                 try await self.client.from("loan_payments").upsert(
                     Row(loan_id: loanId, family_id: familyId, installment_no: number, paid_on: day),
-                    onConflict: "loan_id,installment_no").execute()
+                    onConflict: "loan_id,installment_no", ignoreDuplicates: true).execute()
             } else {
                 try await self.client.from("loan_payments").delete()
                     .eq("loan_id", value: loanId).eq("installment_no", value: number).execute()
@@ -833,7 +865,11 @@ final class LiveTripService: TripServicing {
     }
 
     func delete(_ trip: Trip) async throws {
-        try await run { try await self.client.from("trips").delete().eq("id", value: trip.id).execute() }
+        // RLS lets only the author or an admin delete; a filtered delete removes zero rows without an error.
+        let removed: [Trip] = try await run {
+            try await self.client.from("trips").delete().eq("id", value: trip.id).select().execute().value
+        }
+        guard !removed.isEmpty else { throw AppError.forbidden }
     }
 
     func delete(_ item: TripItem) async throws {
