@@ -178,12 +178,14 @@ struct AddChildView: View {
     @State private var action = AsyncAction()
 
     private let bloodTypes = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"]
+    /// The database accepts birth dates from 2000-01-01 (children and teenagers up to ~25 years).
+    private static let earliestBirth = Calendar.current.date(from: DateComponents(year: 2000, month: 1, day: 1)) ?? .distantPast
 
     var body: some View {
         NavigationStack {
             Form {
                 TextField("children.name", text: $name).accessibilityIdentifier("childNameField")
-                DatePicker("children.birth", selection: $birth, in: ...Date(), displayedComponents: .date)
+                DatePicker("children.birth", selection: $birth, in: Self.earliestBirth...Date(), displayedComponents: .date)
                 Picker("children.sex", selection: $sex) {
                     Text("children.sex.female").tag(ChildSex.female)
                     Text("children.sex.male").tag(ChildSex.male)

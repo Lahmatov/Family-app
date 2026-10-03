@@ -9,37 +9,20 @@ struct RootView: View {
             case .launching:
                 ProgressView()
             case .signedOut:
-                SignInView()
+                SignInView().readableWidth()
             case .mfaEnrollment:
-                MFAEnrollView()
+                MFAEnrollView().readableWidth()
             case let .mfaChallenge(factorId):
-                MFAChallengeView(factorId: factorId)
+                MFAChallengeView(factorId: factorId).readableWidth()
             case .noFamily:
-                NoFamilyView()
+                NoFamilyView().readableWidth()
             case .ready:
-                MainTabView()
+                MainNavigation()
             case let .failed(error):
                 ErrorStateView(error: error)
             }
         }
         .animation(.default, value: model.phase)
-    }
-}
-
-struct MainTabView: View {
-    var body: some View {
-        TabView {
-            BudgetHomeView()
-                .tabItem { Label("tab.budget", systemImage: "eurosign.circle") }
-            ListingsHomeView()
-                .tabItem { Label("tab.listings", systemImage: "building.2") }
-            ChildrenHomeView()
-                .tabItem { Label("tab.children", systemImage: "figure.and.child.holdinghands") }
-            GoalsHomeView()
-                .tabItem { Label("tab.goals", systemImage: "target") }
-            FamilyView()
-                .tabItem { Label("tab.family", systemImage: "person.3") }
-        }
     }
 }
 
@@ -93,5 +76,14 @@ extension View {
         } message: { error in
             Text(error.localizedDescription)
         }
+    }
+}
+
+extension View {
+    /// Keeps forms at a comfortable width on iPad and in landscape instead of stretching edge to edge.
+    func readableWidth(_ width: CGFloat = 640) -> some View {
+        frame(maxWidth: width)
+            .frame(maxWidth: .infinity)
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 }

@@ -45,7 +45,13 @@ targets:
         CFBundleDevelopmentRegion: en
         CFBundleLocalizations: [en, ru, pt-PT]
         UILaunchScreen: {}
-        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations:
+          [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
         NSFaceIDUsageDescription: "Face ID protects your family data."
         NSCameraUsageDescription: "Take photos of receipts and documents."
@@ -61,6 +67,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.family.FamilyApp
+        TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.lifestyle
         GENERATE_INFOPLIST_FILE: NO
         LOCALIZATION_PREFERS_STRING_CATALOGS: YES

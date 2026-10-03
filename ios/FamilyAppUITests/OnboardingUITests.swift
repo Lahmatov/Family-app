@@ -14,6 +14,18 @@ final class OnboardingUITests: XCTestCase {
         return app
     }
 
+    /// Tab bar on iPhone, sidebar on iPad.
+    private func openSection(_ app: XCUIApplication, _ id: String) {
+        let sidebarItem = app.descendants(matching: .any)["section-\(id)"].firstMatch
+        if app.tabBars.firstMatch.waitForExistence(timeout: 2) {
+            let order = ["budget", "listings", "children", "goals", "family"]
+            app.tabBars.buttons.element(boundBy: order.firstIndex(of: id)!).tap()
+        } else {
+            XCTAssertTrue(sidebarItem.waitForExistence(timeout: 5))
+            sidebarItem.tap()
+        }
+    }
+
     private func signIn(_ app: XCUIApplication, password: String) {
         let email = app.textFields["emailField"]
         XCTAssertTrue(email.waitForExistence(timeout: 5))
@@ -78,7 +90,7 @@ final class OnboardingUITests: XCTestCase {
     func testSignOut() {
         let app = launch(["-signed-in"])
         XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
-        app.tabBars.buttons.element(boundBy: 4).tap()   // Family
+        openSection(app, "family")
         app.buttons["settingsLink"].tap()
         app.buttons["signOutButton"].tap()
         XCTAssertTrue(app.textFields["emailField"].waitForExistence(timeout: 5))
