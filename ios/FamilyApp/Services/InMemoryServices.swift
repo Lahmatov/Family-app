@@ -304,6 +304,27 @@ actor InMemoryStore {
         tripItemRows.removeAll { $0.id == item.id }
     }
 
+    /// Mirrors `account_erasure_plan` / `delete_my_account` closely enough for UI tests and models.
+    func addMember(_ profile: MemberProfile, to familyId: UUID) { members[familyId, default: []].append(profile) }
+
+    func erasureBlockers() throws -> [ErasurePlan.Blocker] {
+        try requireMFA()
+        return families.compactMap { membership in
+            let others = (members[membership.family.id] ?? []).filter { $0.userId != userId }
+            let otherAdmins = others.filter { $0.role == .admin }
+            return membership.role == .admin && !others.isEmpty && otherAdmins.isEmpty
+                ? ErasurePlan.Blocker(name: membership.family.name) : nil
+        }
+    }
+
+    func eraseAccount() throws {
+        guard try erasureBlockers().isEmpty else { throw AppError.conflict }
+        families = []
+        members = [:]
+        signedIn = false
+        mfaVerified = false
+    }
+
     func deleteLoan(_ loan: Loan) throws {
         try requireAdult(loan.familyId)
         loanRows.removeAll { $0.id == loan.id }
@@ -513,5 +534,15 @@ final class InMemoryTripService: TripServicing {
     func setDone(_ item: TripItem, done: Bool) async throws { try await store.setTripItemDone(item, done: done) }
     func delete(_ trip: Trip) async throws { try await store.deleteTrip(trip) }
     func delete(_ item: TripItem) async throws { try await store.deleteTripItem(item) }
+}
+
+final class InMemoryPrivacyService: PrivacyServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func exportData() async throws -> Data { Data("{\"exported\": true}".utf8) }
+    func erasurePlan() async throws -> ErasurePlan { ErasurePlan(blockers: try await store.erasureBlockers(), files: []) }
+    func removeFiles(_ files: [ErasurePlan.File]) async throws {}
+    func deleteAccount() async throws { try await store.eraseAccount() }
 }
 #endif

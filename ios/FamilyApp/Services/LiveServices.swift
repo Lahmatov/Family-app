@@ -845,9 +845,46 @@ final class LiveTripService: TripServicing {
     }
 }
 
+final class LivePrivacyService: PrivacyServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func exportData() async throws -> Data {
+        let raw = try await run { try await self.client.rpc("export_my_data").execute().data }
+        // Readable for the person who receives the file.
+        let object = try JSONSerialization.jsonObject(with: raw)
+        return try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+    }
+
+    func erasurePlan() async throws -> ErasurePlan {
+        try await run { try await self.client.rpc("account_erasure_plan").execute().value }
+    }
+
+    func removeFiles(_ files: [ErasurePlan.File]) async throws {
+        for (bucket, group) in Dictionary(grouping: files, by: \.bucket) {
+            // Storage accepts batches; 100 paths at a time keeps requests small.
+            for start in stride(from: 0, to: group.count, by: 100) {
+                let names = group[start..<min(start + 100, group.count)].map(\.name)
+                _ = try await run { try await self.client.storage.from(bucket).remove(paths: names) }
+            }
+        }
+    }
+
+    func deleteAccount() async throws {
+        try await run { try await self.client.rpc("delete_my_account").execute() }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing, TripServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing, TripServicing, PrivacyServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -946,4 +983,8 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
     func setDone(_ item: TripItem, done: Bool) async throws { throw AppError.invalidConfiguration }
     func delete(_ trip: Trip) async throws { throw AppError.invalidConfiguration }
     func delete(_ item: TripItem) async throws { throw AppError.invalidConfiguration }
+    func exportData() async throws -> Data { throw AppError.invalidConfiguration }
+    func erasurePlan() async throws -> ErasurePlan { throw AppError.invalidConfiguration }
+    func removeFiles(_ files: [ErasurePlan.File]) async throws { throw AppError.invalidConfiguration }
+    func deleteAccount() async throws { throw AppError.invalidConfiguration }
 }

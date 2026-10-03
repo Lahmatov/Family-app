@@ -29,7 +29,7 @@ private struct VaultGateView: View {
         _model = State(initialValue: VaultModel(
             userId: userId, familyId: familyId, role: membership.role, service: services.vault,
             identities: services.vaultIdentities, members: { try await family.members(of: familyId) }))
-        authenticator = ProcessInfo.processInfo.arguments.contains("-ui-testing") ? AlwaysAuthenticator() : LocalDeviceAuthenticator()
+        authenticator = makeDeviceAuthenticator()
     }
 
     var body: some View {
@@ -58,10 +58,6 @@ private struct VaultGateView: View {
         unlocked = result == .success || result == .unavailable
         denied = !unlocked
     }
-}
-
-private struct AlwaysAuthenticator: DeviceAuthenticating {
-    func authenticate(reason: String) async -> DeviceAuthResult { .success }
 }
 
 private struct VaultContentView: View {

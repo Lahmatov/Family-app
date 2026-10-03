@@ -108,3 +108,17 @@ final class AppLock {
         }
     }
 }
+
+/// Real LocalAuthentication, except in debug UI tests where nobody can touch Face ID.
+func makeDeviceAuthenticator() -> any DeviceAuthenticating {
+    #if DEBUG
+    if ProcessInfo.processInfo.arguments.contains("-ui-testing") { return AlwaysAuthenticator() }
+    #endif
+    return LocalDeviceAuthenticator()
+}
+
+#if DEBUG
+private struct AlwaysAuthenticator: DeviceAuthenticating {
+    func authenticate(reason: String) async -> DeviceAuthResult { .success }
+}
+#endif

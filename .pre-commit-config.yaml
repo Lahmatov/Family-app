@@ -1,0 +1,7 @@
+# Secrets are caught before they enter history (CI scans afterwards, which is too late for a leaked key).
+# Setup once:  brew install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks

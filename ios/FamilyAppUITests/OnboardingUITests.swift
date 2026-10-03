@@ -131,4 +131,16 @@ final class OnboardingUITests: XCTestCase {
         app.buttons["saveTripButton"].tap()
         XCTAssertTrue(app.staticTexts["Algarve"].waitForExistence(timeout: 5))
     }
+
+    func testEraseAccountReturnsToSignIn() {
+        let app = launch(["-signed-in"])
+        XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
+        openSection(app, "family")
+        app.buttons["settingsLink"].tap()
+        app.buttons["eraseAccountButton"].tap()
+        let confirm = app.buttons["Delete everything"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+        XCTAssertTrue(app.textFields["emailField"].waitForExistence(timeout: 5))
+    }
 }

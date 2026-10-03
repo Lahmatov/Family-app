@@ -47,6 +47,7 @@ struct Services: Sendable {
     let notes: any NoteServicing
     let loans: any LoanServicing
     let trips: any TripServicing
+    let privacy: any PrivacyServicing
     let vault: any VaultServicing
     let vaultIdentities: any VaultIdentityStoring
 
@@ -68,6 +69,7 @@ struct Services: Sendable {
                 notes: LiveNoteService(client: client),
                 loans: LiveLoanService(client: client),
                 trips: LiveTripService(client: client),
+                privacy: LivePrivacyService(client: client),
                 vault: LiveVaultService(client: client),
                 vaultIdentities: KeychainVaultIdentityStore()
             )
@@ -88,6 +90,7 @@ struct Services: Sendable {
                         notes: InMemoryNoteService(store: store),
                         loans: InMemoryLoanService(store: store),
                         trips: InMemoryTripService(store: store),
+                        privacy: InMemoryPrivacyService(store: store),
                         vault: InMemoryVaultService(backend: InMemoryVaultBackend(), userId: store.userId),
                         vaultIdentities: InMemoryIdentityStore())
     }
@@ -98,7 +101,7 @@ struct Services: Sendable {
                                         budget: MisconfiguredService(), listings: MisconfiguredService(),
                                         children: MisconfiguredService(), goals: MisconfiguredService(),
                                         notes: MisconfiguredService(), loans: MisconfiguredService(),
-                                        trips: MisconfiguredService(),
+                                        trips: MisconfiguredService(), privacy: MisconfiguredService(),
                                         vault: MisconfiguredVault(), vaultIdentities: MisconfiguredVault())
 }
 
@@ -140,6 +143,15 @@ protocol NoteServicing: Sendable {
     func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws
     func update(_ note: Note) async throws
     func delete(_ note: Note) async throws
+}
+
+protocol PrivacyServicing: Sendable {
+    /// Everything the person may read, as JSON (GDPR access / portability).
+    func exportData() async throws -> Data
+    func erasurePlan() async throws -> ErasurePlan
+    func removeFiles(_ files: [ErasurePlan.File]) async throws
+    /// Erases the account on the server; the session is invalid afterwards.
+    func deleteAccount() async throws
 }
 
 protocol TripServicing: Sendable {
