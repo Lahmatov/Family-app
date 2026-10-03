@@ -13,7 +13,8 @@ public struct ListingLink: Hashable, Sendable {
 
     static let knownSites: [(host: String, key: String)] = [
         ("idealista.pt", "idealista"), ("imovirtual.com", "imovirtual"), ("casa.sapo.pt", "casasapo"),
-        ("supercasa.pt", "supercasa"), ("remax.pt", "remax"),
+        ("supercasa.pt", "supercasa"), ("remax.pt", "remax"), ("olx.pt", "olx"), ("century21.pt", "century21"),
+        ("zome.pt", "zome"),
     ]
     public static let maxLength = 2048
 
@@ -38,8 +39,17 @@ public struct ListingLink: Hashable, Sendable {
         if parts.queryItems?.isEmpty == true { parts.queryItems = nil }
         guard let url = parts.url, url.absoluteString.count <= Self.maxLength else { throw ParseError.invalid }
 
-        self.url = url
         let bare = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
         source = Self.knownSites.first { bare == $0.host || bare.hasSuffix("." + $0.host) }?.key ?? bare
+        self.url = source == "idealista" ? Self.idealistaCanonical(url) ?? url : url
+    }
+
+    /// Idealista ads are `/imovel/<id>/` whatever the language prefix, slug or search parameters, so the same
+    /// ad shared from the app, the site or a search result is one row.
+    private static func idealistaCanonical(_ url: URL) -> URL? {
+        guard let regex = try? NSRegularExpression(pattern: #"^/(?:[a-z]{2}/)?imovel/(\d{1,12})(?:/|$)"#),
+              let match = regex.firstMatch(in: url.path, range: NSRange(url.path.startIndex..., in: url.path)),
+              let range = Range(match.range(at: 1), in: url.path) else { return nil }
+        return URL(string: "https://www.idealista.pt/imovel/\(url.path[range])/")
     }
 }

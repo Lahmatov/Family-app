@@ -193,6 +193,11 @@ struct ListingDetailView: View {
     }
 }
 
+private struct ImportTarget: Identifiable {
+    let url: URL
+    var id: URL { url }
+}
+
 struct AddListingView: View {
     let model: ListingsModel
     @Environment(\.dismiss) private var dismiss
@@ -204,6 +209,10 @@ struct AddListingView: View {
     @State private var address = ""
     @State private var action = AsyncAction()
     @State private var invalid: LocalizedStringKey?
+    @State private var importTarget: ImportTarget?
+    @State private var imported = false
+    /// Exact coordinates from the page; used only while the address is the one the page gave.
+    @State private var importedPlace: (address: String, lat: Double, lng: Double)?
 
     var body: some View {
         NavigationStack {
@@ -213,6 +222,9 @@ struct AddListingView: View {
                         .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
                         .accessibilityIdentifier("listingLinkField")
                     Button("listings.paste") { if let text = UIPasteboard.general.string { link = text } }
+                    Button("listings.import") { importTarget = (try? ListingLink(parsing: link)).map { ImportTarget(url: $0.url) } }
+                        .disabled((try? ListingLink(parsing: link)) == nil)
+                        .accessibilityIdentifier("importListingButton")
                 } footer: { Text("listings.link.footer") }
                 Section {
                     TextField("listings.title", text: $title)
@@ -220,7 +232,12 @@ struct AddListingView: View {
                     TextField("listings.area", text: $area).keyboardType(.decimalPad)
                     TextField("listings.rooms", text: $rooms).keyboardType(.numberPad)
                     TextField("listings.address", text: $address)
-                } footer: { Text("listings.address.footer") }
+                } footer: {
+                    VStack(alignment: .leading) {
+                        if imported { Text("listings.import.check").foregroundStyle(.orange) }
+                        Text("listings.address.footer")
+                    }
+                }
                 if let invalid { Section { Text(invalid).foregroundStyle(.red) } }
             }
             .navigationTitle("listings.add")
@@ -233,7 +250,22 @@ struct AddListingView: View {
                 }
             }
             .errorAlert(action)
+            .sheet(item: $importTarget) { target in
+                ListingImportView(url: target.url) { apply($0) }
+            }
         }
+    }
+
+    private func apply(_ draft: ListingDraft) {
+        imported = true
+        if title.isEmpty { title = draft.title }
+        if let minor = draft.priceMinor {
+            price = minor % 100 == 0 ? String(minor / 100) : String(format: "%lld.%02lld", minor / 100, minor % 100)
+        }
+        if let area = draft.areaM2 { self.area = "\(area)" }
+        if let rooms = draft.rooms { self.rooms = String(rooms) }
+        if let found = draft.address { address = found }
+        if let lat = draft.latitude, let lng = draft.longitude { importedPlace = (address, lat, lng) }
     }
 
     private func save() {
@@ -259,8 +291,11 @@ struct AddListingView: View {
         invalid = nil
         Task {
             await action.run {
-                if let address = new.address,
-                   let place = try? await CLGeocoder().geocodeAddressString(address).first?.location?.coordinate {
+                if let known = importedPlace, known.address == new.address {
+                    new.lat = known.lat
+                    new.lng = known.lng
+                } else if let address = new.address,
+                          let place = try? await CLGeocoder().geocodeAddressString(address).first?.location?.coordinate {
                     new.lat = place.latitude
                     new.lng = place.longitude
                 }

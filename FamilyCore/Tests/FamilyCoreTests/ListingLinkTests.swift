@@ -6,11 +6,17 @@ final class ListingLinkTests: XCTestCase {
     func testKnownSitesAndNormalisation() throws {
         let link = try ListingLink(parsing: "  https://WWW.Idealista.pt/imovel/123/?utm_source=x&fbclid=y&keep=1#photos ")
         XCTAssertEqual(link.source, "idealista")
-        XCTAssertEqual(link.url.absoluteString, "https://www.idealista.pt/imovel/123/?keep=1")
+        XCTAssertEqual(link.url.absoluteString, "https://www.idealista.pt/imovel/123/", "idealista ads are keyed by their id")
+        XCTAssertEqual(try ListingLink(parsing: "https://www.idealista.pt/en/imovel/123/?xtmc=1").url, link.url)
+        XCTAssertEqual(try ListingLink(parsing: "https://idealista.pt/imovel/123").url, link.url)
+        XCTAssertEqual(try ListingLink(parsing: "https://www.idealista.pt/comprar-casas/lisboa/?x=1").url.absoluteString,
+                       "https://www.idealista.pt/comprar-casas/lisboa/?x=1", "not an ad: left alone")
         XCTAssertEqual(try ListingLink(parsing: "https://www.imovirtual.com/pt/anuncio/x?utm_medium=a").url.absoluteString,
                        "https://www.imovirtual.com/pt/anuncio/x")
         XCTAssertEqual(try ListingLink(parsing: "https://casa.sapo.pt/comprar/1").source, "casasapo")
         XCTAssertEqual(try ListingLink(parsing: "https://pro.remax.pt/a").source, "remax")
+        XCTAssertEqual(try ListingLink(parsing: "https://www.olx.pt/d/anuncio/x").source, "olx")
+        XCTAssertEqual(try ListingLink(parsing: "https://www.century21.pt/comprar/x").source, "century21")
     }
 
     func testUnknownSiteUsesHost() throws {
