@@ -28,6 +28,8 @@ actor InMemoryStore {
     var vaccinations: [ChildVaccination] = []
     var measurements: [Measurement] = []
     var illnesses: [Illness] = []
+    var goals: [Goal] = []
+    var goalEntries: [GoalEntry] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -197,6 +199,25 @@ actor InMemoryStore {
         illnesses.append(Illness(id: UUID(), childId: childId, title: title, startedOn: startedOn, endedOn: nil))
     }
 
+    func addGoal(familyId: UUID, _ new: NewGoal) throws {
+        try requireAdult(familyId)
+        goals.append(Goal(id: UUID(), familyId: familyId, kind: new.kind, title: new.title, unit: new.unit,
+                          startValue: new.start, targetValue: new.target, startsOn: new.startsOn,
+                          deadline: new.deadline, isPrivate: new.isPrivate))
+    }
+
+    func logGoal(familyId: UUID, goalId: UUID, value: Decimal, on day: LocalDate) throws {
+        try requireAdult(familyId)
+        goalEntries.removeAll { $0.goalId == goalId && $0.recordedOn == day }
+        goalEntries.append(GoalEntry(id: UUID(), goalId: goalId, value: value, recordedOn: day, note: nil))
+    }
+
+    func deleteGoal(_ goal: Goal) throws {
+        try requireAdult(goal.familyId)
+        goals.removeAll { $0.id == goal.id }
+        goalEntries.removeAll { $0.goalId == goal.id }
+    }
+
     func deleteChild(_ child: Child) throws {
         guard role(in: child.familyId) == .admin else { throw AppError.forbidden }
         kids.removeAll { $0.id == child.id }
@@ -324,5 +345,20 @@ final class InMemoryChildService: ChildServicing {
         try await store.addIllness(familyId: familyId, childId: childId, title: title, startedOn: startedOn)
     }
     func delete(_ child: Child) async throws { try await store.deleteChild(child) }
+}
+final class InMemoryGoalService: GoalServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func goals(familyId: UUID) async throws -> [Goal] {
+        try await store.requireAdult(familyId)
+        return await store.goals.filter { $0.familyId == familyId }
+    }
+    func entries(familyId: UUID) async throws -> [GoalEntry] { await store.goalEntries }
+    func add(familyId: UUID, _ goal: NewGoal) async throws { try await store.addGoal(familyId: familyId, goal) }
+    func log(familyId: UUID, goalId: UUID, value: Decimal, on day: LocalDate) async throws {
+        try await store.logGoal(familyId: familyId, goalId: goalId, value: value, on: day)
+    }
+    func delete(_ goal: Goal) async throws { try await store.deleteGoal(goal) }
 }
 #endif

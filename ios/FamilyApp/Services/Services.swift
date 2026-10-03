@@ -43,6 +43,7 @@ struct Services: Sendable {
     let budget: any BudgetServicing
     let listings: any ListingServicing
     let children: any ChildServicing
+    let goals: any GoalServicing
 
     static func make(arguments: [String] = ProcessInfo.processInfo.arguments) -> Services {
         #if DEBUG
@@ -57,7 +58,8 @@ struct Services: Sendable {
                 family: LiveFamilyService(client: client),
                 budget: LiveBudgetService(client: client),
                 listings: LiveListingService(client: client),
-                children: LiveChildService(client: client)
+                children: LiveChildService(client: client),
+                goals: LiveGoalService(client: client)
             )
         } catch {
             return .misconfigured
@@ -71,14 +73,15 @@ struct Services: Sendable {
                         family: InMemoryFamilyService(store: store),
                         budget: InMemoryBudgetService(store: store),
                         listings: InMemoryListingService(store: store),
-                        children: InMemoryChildService(store: store))
+                        children: InMemoryChildService(store: store),
+                        goals: InMemoryGoalService(store: store))
     }
     #endif
 
     /// Used when Info.plist has no valid Supabase settings: every call fails clearly.
     static let misconfigured = Services(auth: MisconfiguredService(), family: MisconfiguredService(),
                                         budget: MisconfiguredService(), listings: MisconfiguredService(),
-                                        children: MisconfiguredService())
+                                        children: MisconfiguredService(), goals: MisconfiguredService())
 }
 
 protocol ListingServicing: Sendable {
@@ -104,4 +107,12 @@ protocol ChildServicing: Sendable {
     func measure(familyId: UUID, childId: UUID, on: LocalDate, heightMm: Int?, weightG: Int?) async throws
     func addIllness(familyId: UUID, childId: UUID, title: String, startedOn: LocalDate) async throws
     func delete(_ child: Child) async throws
+}
+
+protocol GoalServicing: Sendable {
+    func goals(familyId: UUID) async throws -> [Goal]
+    func entries(familyId: UUID) async throws -> [GoalEntry]
+    func add(familyId: UUID, _ goal: NewGoal) async throws
+    func log(familyId: UUID, goalId: UUID, value: Decimal, on: LocalDate) async throws
+    func delete(_ goal: Goal) async throws
 }

@@ -154,6 +154,14 @@ struct FamilyView: View {
                         }
                     }
                 }
+                Section {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Label("tab.settings", systemImage: "gearshape")
+                    }
+                    .accessibilityIdentifier("settingsLink")
+                }
             }
             .navigationTitle(membership?.family.name ?? "")
             .toolbar {

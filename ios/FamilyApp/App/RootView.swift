@@ -35,10 +35,10 @@ struct MainTabView: View {
                 .tabItem { Label("tab.listings", systemImage: "building.2") }
             ChildrenHomeView()
                 .tabItem { Label("tab.children", systemImage: "figure.and.child.holdinghands") }
+            GoalsHomeView()
+                .tabItem { Label("tab.goals", systemImage: "target") }
             FamilyView()
                 .tabItem { Label("tab.family", systemImage: "person.3") }
-            SettingsView()
-                .tabItem { Label("tab.settings", systemImage: "gearshape") }
         }
     }
 }

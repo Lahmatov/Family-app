@@ -636,9 +636,59 @@ final class LiveChildService: ChildServicing {
     }
 }
 
+// MARK: - Goals
+
+final class LiveGoalService: GoalServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func goals(familyId: UUID) async throws -> [Goal] {
+        try await run { try await self.client.from("goals").select().eq("family_id", value: familyId)
+            .order("created_at").execute().value }
+    }
+
+    func entries(familyId: UUID) async throws -> [GoalEntry] {
+        try await run { try await self.client.from("goal_entries").select().eq("family_id", value: familyId)
+            .order("recorded_on").execute().value }
+    }
+
+    func add(familyId: UUID, _ goal: NewGoal) async throws {
+        struct Row: Encodable {
+            let family_id: UUID; let kind: GoalKind; let title: String; let unit: String
+            let start_value: Decimal; let target_value: Decimal; let starts_on: LocalDate
+            let deadline: LocalDate?; let is_private: Bool
+        }
+        try await run { try await self.client.from("goals").insert(Row(
+            family_id: familyId, kind: goal.kind, title: goal.title, unit: goal.unit, start_value: goal.start,
+            target_value: goal.target, starts_on: goal.startsOn, deadline: goal.deadline,
+            is_private: goal.isPrivate)).execute() }
+    }
+
+    func log(familyId: UUID, goalId: UUID, value: Decimal, on day: LocalDate) async throws {
+        struct Row: Encodable {
+            let goal_id: UUID; let family_id: UUID; let value: Decimal; let recorded_on: LocalDate
+        }
+        // One reading per day: logging again on the same day replaces the earlier value.
+        try await run { try await self.client.from("goal_entries").upsert(
+            Row(goal_id: goalId, family_id: familyId, value: value, recorded_on: day),
+            onConflict: "goal_id,recorded_on").execute() }
+    }
+
+    func delete(_ goal: Goal) async throws {
+        try await run { try await self.client.from("goals").delete().eq("id", value: goal.id).execute() }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -706,4 +756,9 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
         throw AppError.invalidConfiguration
     }
     func delete(_ child: Child) async throws { throw AppError.invalidConfiguration }
+    func goals(familyId: UUID) async throws -> [Goal] { throw AppError.invalidConfiguration }
+    func entries(familyId: UUID) async throws -> [GoalEntry] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, _ goal: NewGoal) async throws { throw AppError.invalidConfiguration }
+    func log(familyId: UUID, goalId: UUID, value: Decimal, on: LocalDate) async throws { throw AppError.invalidConfiguration }
+    func delete(_ goal: Goal) async throws { throw AppError.invalidConfiguration }
 }
