@@ -454,9 +454,118 @@ final class LiveBudgetService: BudgetServicing {
     }
 }
 
+// MARK: - Listings
+
+private struct NewListingRow: Encodable {
+    let family_id: UUID
+    let url: String
+    let source: String
+    let title: String
+    let price_minor: Int64?
+    let area_m2: Decimal?
+    let rooms: Int?
+    let address: String?
+    let lat: Double?
+    let lng: Double?
+}
+
+private struct AnswerRow: Encodable {
+    let listing_id: UUID
+    let criterion_id: UUID
+    let family_id: UUID
+    let answer: CriterionAnswer
+}
+
+final class LiveListingService: ListingServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func listings(familyId: UUID) async throws -> [Listing] {
+        try await fetch("listings", familyId: familyId, order: "created_at")
+    }
+
+    func criteria(familyId: UUID) async throws -> [Criterion] {
+        try await fetch("listing_criteria", familyId: familyId, order: "created_at")
+    }
+
+    func answers(familyId: UUID) async throws -> [ListingAnswer] {
+        try await fetch("listing_answers", familyId: familyId, order: nil)
+    }
+
+    func comments(listingId: UUID) async throws -> [ListingComment] {
+        do {
+            return try await client.from("listing_comments").select().eq("listing_id", value: listingId)
+                .order("created_at").execute().value
+        } catch {
+            throw mapError(error)
+        }
+    }
+
+    func add(familyId: UUID, _ listing: NewListing) async throws {
+        try await run {
+            try await self.client.from("listings").insert(NewListingRow(
+                family_id: familyId, url: listing.link.url.absoluteString, source: listing.link.source,
+                title: listing.title, price_minor: listing.priceMinor, area_m2: listing.areaM2,
+                rooms: listing.rooms, address: listing.address, lat: listing.lat, lng: listing.lng)).execute()
+        }
+    }
+
+    func setStatus(_ listing: Listing, _ status: ListingStatus) async throws {
+        try await run {
+            try await self.client.from("listings").update(["status": status.rawValue])
+                .eq("id", value: listing.id).execute()
+        }
+    }
+
+    func setAnswer(familyId: UUID, listingId: UUID, criterionId: UUID, answer: CriterionAnswer) async throws {
+        try await run {
+            try await self.client.from("listing_answers").upsert(
+                AnswerRow(listing_id: listingId, criterion_id: criterionId, family_id: familyId, answer: answer),
+                onConflict: "listing_id,criterion_id").execute()
+        }
+    }
+
+    func addCriterion(familyId: UUID, name: String, weight: Int) async throws {
+        struct Row: Encodable { let family_id: UUID; let name: String; let weight: Int }
+        try await run {
+            try await self.client.from("listing_criteria")
+                .insert(Row(family_id: familyId, name: name, weight: weight)).execute()
+        }
+    }
+
+    func addComment(familyId: UUID, listingId: UUID, body: String) async throws {
+        struct Row: Encodable { let listing_id: UUID; let family_id: UUID; let body: String }
+        try await run {
+            try await self.client.from("listing_comments")
+                .insert(Row(listing_id: listingId, family_id: familyId, body: body)).execute()
+        }
+    }
+
+    func delete(_ listing: Listing) async throws {
+        try await run { try await self.client.from("listings").delete().eq("id", value: listing.id).execute() }
+    }
+
+    private func fetch<T: Decodable>(_ table: String, familyId: UUID, order: String?) async throws -> [T] {
+        do {
+            let query = client.from(table).select().eq("family_id", value: familyId)
+            if let order { return try await query.order(order).execute().value }
+            return try await query.execute().value
+        } catch {
+            throw mapError(error)
+        }
+    }
+
+    private func run(_ operation: @Sendable () async throws -> Void) async throws {
+        do { try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -495,4 +604,16 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing {
     func setBudget(familyId: UUID, categoryId: UUID?, amountMinor: Int64, from month: YearMonth) async throws {
         throw AppError.invalidConfiguration
     }
+    func listings(familyId: UUID) async throws -> [Listing] { throw AppError.invalidConfiguration }
+    func criteria(familyId: UUID) async throws -> [Criterion] { throw AppError.invalidConfiguration }
+    func answers(familyId: UUID) async throws -> [ListingAnswer] { throw AppError.invalidConfiguration }
+    func comments(listingId: UUID) async throws -> [ListingComment] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, _ listing: NewListing) async throws { throw AppError.invalidConfiguration }
+    func setStatus(_ listing: Listing, _ status: ListingStatus) async throws { throw AppError.invalidConfiguration }
+    func setAnswer(familyId: UUID, listingId: UUID, criterionId: UUID, answer: CriterionAnswer) async throws {
+        throw AppError.invalidConfiguration
+    }
+    func addCriterion(familyId: UUID, name: String, weight: Int) async throws { throw AppError.invalidConfiguration }
+    func addComment(familyId: UUID, listingId: UUID, body: String) async throws { throw AppError.invalidConfiguration }
+    func delete(_ listing: Listing) async throws { throw AppError.invalidConfiguration }
 }

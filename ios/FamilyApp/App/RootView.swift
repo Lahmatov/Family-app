@@ -31,6 +31,8 @@ struct MainTabView: View {
         TabView {
             BudgetHomeView()
                 .tabItem { Label("tab.budget", systemImage: "eurosign.circle") }
+            ListingsHomeView()
+                .tabItem { Label("tab.listings", systemImage: "building.2") }
             FamilyView()
                 .tabItem { Label("tab.family", systemImage: "person.3") }
             SettingsView()

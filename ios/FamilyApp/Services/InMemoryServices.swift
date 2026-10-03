@@ -20,6 +20,10 @@ actor InMemoryStore {
     var budgets: [Budget] = []
     var invitations: [Invitation] = []
     var approvals: [ApprovalRequest] = []
+    var listings: [Listing] = []
+    var criteria: [Criterion] = []
+    var answers: [ListingAnswer] = []
+    var comments: [ListingComment] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -127,6 +131,48 @@ actor InMemoryStore {
     func deleteTransaction(id: UUID) {
         transactions.removeAll { $0.id == id }
     }
+
+    func requireAdult(_ familyId: UUID) throws {
+        try requireMFA()
+        guard role(in: familyId)?.isAtLeast(.adult) == true else { throw AppError.forbidden }
+    }
+
+    func addListing(familyId: UUID, _ new: NewListing) throws {
+        try requireAdult(familyId)
+        guard !listings.contains(where: { $0.familyId == familyId && $0.url == new.link.url }) else {
+            throw AppError.conflict
+        }
+        listings.append(Listing(id: UUID(), familyId: familyId, url: new.link.url, source: new.link.source,
+                                title: new.title, priceMinor: new.priceMinor, currency: .eur, areaM2: new.areaM2,
+                                rooms: new.rooms, address: new.address, lat: new.lat, lng: new.lng,
+                                status: .new, createdBy: userId))
+    }
+
+    func setStatus(_ listing: Listing, _ status: ListingStatus) throws {
+        try requireAdult(listing.familyId)
+        if let index = listings.firstIndex(where: { $0.id == listing.id }) { listings[index].status = status }
+    }
+
+    func setAnswer(familyId: UUID, listingId: UUID, criterionId: UUID, answer: CriterionAnswer) throws {
+        try requireAdult(familyId)
+        answers.removeAll { $0.listingId == listingId && $0.criterionId == criterionId }
+        answers.append(ListingAnswer(listingId: listingId, criterionId: criterionId, answer: answer))
+    }
+
+    func addCriterion(familyId: UUID, name: String, weight: Int) throws {
+        try requireAdult(familyId)
+        criteria.append(Criterion(id: UUID(), name: name, weight: weight))
+    }
+
+    func addComment(familyId: UUID, listingId: UUID, body: String) throws {
+        try requireAdult(familyId)
+        comments.append(ListingComment(id: UUID(), listingId: listingId, body: body, createdBy: userId, createdAt: Date()))
+    }
+
+    func deleteListing(_ listing: Listing) throws {
+        try requireAdult(listing.familyId)
+        listings.removeAll { $0.id == listing.id }
+    }
 }
 
 final class InMemoryAuthService: AuthServicing {
@@ -193,5 +239,32 @@ final class InMemoryBudgetService: BudgetServicing {
     func setBudget(familyId: UUID, categoryId: UUID?, amountMinor: Int64, from month: YearMonth) async throws {
         try await store.setBudget(familyId: familyId, categoryId: categoryId, amountMinor: amountMinor, month: month)
     }
+}
+
+final class InMemoryListingService: ListingServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func listings(familyId: UUID) async throws -> [Listing] {
+        try await store.requireAdult(familyId)
+        return await store.listings.filter { $0.familyId == familyId }
+    }
+    func criteria(familyId: UUID) async throws -> [Criterion] { await store.criteria }
+    func answers(familyId: UUID) async throws -> [ListingAnswer] { await store.answers }
+    func comments(listingId: UUID) async throws -> [ListingComment] {
+        await store.comments.filter { $0.listingId == listingId }
+    }
+    func add(familyId: UUID, _ listing: NewListing) async throws { try await store.addListing(familyId: familyId, listing) }
+    func setStatus(_ listing: Listing, _ status: ListingStatus) async throws { try await store.setStatus(listing, status) }
+    func setAnswer(familyId: UUID, listingId: UUID, criterionId: UUID, answer: CriterionAnswer) async throws {
+        try await store.setAnswer(familyId: familyId, listingId: listingId, criterionId: criterionId, answer: answer)
+    }
+    func addCriterion(familyId: UUID, name: String, weight: Int) async throws {
+        try await store.addCriterion(familyId: familyId, name: name, weight: weight)
+    }
+    func addComment(familyId: UUID, listingId: UUID, body: String) async throws {
+        try await store.addComment(familyId: familyId, listingId: listingId, body: body)
+    }
+    func delete(_ listing: Listing) async throws { try await store.deleteListing(listing) }
 }
 #endif

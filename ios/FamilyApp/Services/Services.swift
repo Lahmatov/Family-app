@@ -41,6 +41,7 @@ struct Services: Sendable {
     let auth: any AuthServicing
     let family: any FamilyServicing
     let budget: any BudgetServicing
+    let listings: any ListingServicing
 
     static func make(arguments: [String] = ProcessInfo.processInfo.arguments) -> Services {
         #if DEBUG
@@ -53,7 +54,8 @@ struct Services: Sendable {
             return Services(
                 auth: LiveAuthService(client: client),
                 family: LiveFamilyService(client: client),
-                budget: LiveBudgetService(client: client)
+                budget: LiveBudgetService(client: client),
+                listings: LiveListingService(client: client)
             )
         } catch {
             return .misconfigured
@@ -65,11 +67,25 @@ struct Services: Sendable {
         let store = InMemoryStore(signedIn: startSignedIn)
         return Services(auth: InMemoryAuthService(store: store),
                         family: InMemoryFamilyService(store: store),
-                        budget: InMemoryBudgetService(store: store))
+                        budget: InMemoryBudgetService(store: store),
+                        listings: InMemoryListingService(store: store))
     }
     #endif
 
     /// Used when Info.plist has no valid Supabase settings: every call fails clearly.
     static let misconfigured = Services(auth: MisconfiguredService(), family: MisconfiguredService(),
-                                        budget: MisconfiguredService())
+                                        budget: MisconfiguredService(), listings: MisconfiguredService())
+}
+
+protocol ListingServicing: Sendable {
+    func listings(familyId: UUID) async throws -> [Listing]
+    func criteria(familyId: UUID) async throws -> [Criterion]
+    func answers(familyId: UUID) async throws -> [ListingAnswer]
+    func comments(listingId: UUID) async throws -> [ListingComment]
+    func add(familyId: UUID, _ listing: NewListing) async throws
+    func setStatus(_ listing: Listing, _ status: ListingStatus) async throws
+    func setAnswer(familyId: UUID, listingId: UUID, criterionId: UUID, answer: CriterionAnswer) async throws
+    func addCriterion(familyId: UUID, name: String, weight: Int) async throws
+    func addComment(familyId: UUID, listingId: UUID, body: String) async throws
+    func delete(_ listing: Listing) async throws
 }
