@@ -1,0 +1,13 @@
+[extend]
+useDefault = true
+
+# VaultCrypto declares `let privateKey: Curve25519...PrivateKey` (a typed property, not a literal); the
+# generic rule mistakes the name for a secret. `.gitleaksignore` existed in one commit only (history).
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "VaultIdentity.privateKey declaration"
+paths = [
+  '''FamilyCore/Sources/FamilyCore/Vault/VaultCrypto\.swift''',
+  '''\.gitleaksignore''',
+]
