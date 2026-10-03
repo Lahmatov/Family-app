@@ -95,4 +95,26 @@ final class OnboardingUITests: XCTestCase {
         app.buttons["signOutButton"].tap()
         XCTAssertTrue(app.textFields["emailField"].waitForExistence(timeout: 5))
     }
+
+    func testVaultSetupRequiresRetypingTheRecoveryKey() {
+        let app = launch(["-signed-in"])
+        XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
+        openSection(app, "family")
+        app.buttons["vaultLink"].tap()
+        let create = app.buttons["createVaultButton"]
+        XCTAssertTrue(create.waitForExistence(timeout: 5))
+        create.tap()
+
+        let key = app.staticTexts["recoveryKeyText"]
+        XCTAssertTrue(key.waitForExistence(timeout: 5))
+        let done = app.buttons["recoveryDoneButton"]
+        XCTAssertFalse(done.isEnabled, "cannot continue before confirming the key")
+
+        let field = app.textFields["recoveryConfirmField"]
+        field.tap()
+        field.typeText(key.label)
+        XCTAssertTrue(done.isEnabled)
+        done.tap()
+        XCTAssertTrue(app.buttons["addVaultDocumentButton"].waitForExistence(timeout: 5))
+    }
 }

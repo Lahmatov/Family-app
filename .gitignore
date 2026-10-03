@@ -27,3 +27,4 @@ signing_keys.json
 # Supabase
 supabase/.branches
 supabase/.temp
+FamilyCore/Package.resolved

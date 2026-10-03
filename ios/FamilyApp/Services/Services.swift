@@ -46,6 +46,8 @@ struct Services: Sendable {
     let goals: any GoalServicing
     let notes: any NoteServicing
     let loans: any LoanServicing
+    let vault: any VaultServicing
+    let vaultIdentities: any VaultIdentityStoring
 
     static func make(arguments: [String] = ProcessInfo.processInfo.arguments) -> Services {
         #if DEBUG
@@ -63,7 +65,9 @@ struct Services: Sendable {
                 children: LiveChildService(client: client),
                 goals: LiveGoalService(client: client),
                 notes: LiveNoteService(client: client),
-                loans: LiveLoanService(client: client)
+                loans: LiveLoanService(client: client),
+                vault: LiveVaultService(client: client),
+                vaultIdentities: KeychainVaultIdentityStore()
             )
         } catch {
             return .misconfigured
@@ -80,7 +84,9 @@ struct Services: Sendable {
                         children: InMemoryChildService(store: store),
                         goals: InMemoryGoalService(store: store),
                         notes: InMemoryNoteService(store: store),
-                        loans: InMemoryLoanService(store: store))
+                        loans: InMemoryLoanService(store: store),
+                        vault: InMemoryVaultService(backend: InMemoryVaultBackend(), userId: store.userId),
+                        vaultIdentities: InMemoryIdentityStore())
     }
     #endif
 
@@ -88,7 +94,8 @@ struct Services: Sendable {
     static let misconfigured = Services(auth: MisconfiguredService(), family: MisconfiguredService(),
                                         budget: MisconfiguredService(), listings: MisconfiguredService(),
                                         children: MisconfiguredService(), goals: MisconfiguredService(),
-                                        notes: MisconfiguredService(), loans: MisconfiguredService())
+                                        notes: MisconfiguredService(), loans: MisconfiguredService(),
+                                        vault: MisconfiguredVault(), vaultIdentities: MisconfiguredVault())
 }
 
 protocol ListingServicing: Sendable {

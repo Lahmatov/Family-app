@@ -45,6 +45,7 @@ select is(
    where n.nspname = 'private' and has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   array[
     'private.has_role(uuid,member_role)',
+    'private.holds_key(uuid)',
     'private.mfa_ok()',
     'private.my_role(uuid)',
     'private.role_rank(member_role)',
