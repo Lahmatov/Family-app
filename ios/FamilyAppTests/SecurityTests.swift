@@ -138,17 +138,24 @@ final class ReceiptProcessorTests: XCTestCase {
 final class SessionStorageTests: XCTestCase {
     func testRoundTripReplaceAndRemove() throws {
         let storage = DeviceOnlyKeychainStorage(service: "app.family.tests.\(UUID().uuidString)")
+        // Keychain calls stay outside the XCTAssert autoclosures so that a missing keychain
+        // (unsigned CI host, status -34018) skips the test instead of failing it.
+        let initial, afterStore, afterReplace, afterRemove: Data?
         do {
-            XCTAssertNil(try storage.retrieve(key: "session"))
+            initial = try storage.retrieve(key: "session")
             try storage.store(key: "session", value: Data("one".utf8))
-            XCTAssertEqual(try storage.retrieve(key: "session"), Data("one".utf8))
+            afterStore = try storage.retrieve(key: "session")
             try storage.store(key: "session", value: Data("two".utf8))
-            XCTAssertEqual(try storage.retrieve(key: "session"), Data("two".utf8), "store replaces")
+            afterReplace = try storage.retrieve(key: "session")
             try storage.remove(key: "session")
-            XCTAssertNil(try storage.retrieve(key: "session"))
+            afterRemove = try storage.retrieve(key: "session")
             try storage.remove(key: "session") // removing a missing item is not an error
         } catch let failure as DeviceOnlyKeychainStorage.Failure {
             throw XCTSkip("Keychain is not available in this test host (status \(failure.status))")
         }
+        XCTAssertNil(initial)
+        XCTAssertEqual(afterStore, Data("one".utf8))
+        XCTAssertEqual(afterReplace, Data("two".utf8), "store replaces")
+        XCTAssertNil(afterRemove)
     }
 }
