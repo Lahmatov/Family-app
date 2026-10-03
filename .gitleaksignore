@@ -1,0 +1,2 @@
+# False positive: a property declaration (`let privateKey: Curve25519...PrivateKey`), not a secret.
+7dabf56bb206bf16fbf8973e0c137827ed7679a8:FamilyCore/Sources/FamilyCore/Vault/VaultCrypto.swift:generic-api-key:113
