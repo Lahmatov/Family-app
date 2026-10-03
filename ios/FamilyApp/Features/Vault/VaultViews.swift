@@ -256,7 +256,7 @@ private struct AddVaultDocumentView: View {
             Form {
                 TextField("vault.field.title", text: $title).accessibilityIdentifier("vaultTitleField")
                 Picker("vault.field.kind", selection: $kind) {
-                    ForEach(Self.kinds, id: \.self) { Text(LocalizedStringKey("vault.kind.\($0)")).tag($0) }
+                    ForEach(Self.kinds, id: \.self) { Text(LocalizedStringKey("vault.kind." + $0)).tag($0) }
                 }
                 Picker("vault.field.visibility", selection: $personal) {
                     Text("vault.visibility.family").tag(false)

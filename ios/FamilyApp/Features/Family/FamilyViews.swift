@@ -168,6 +168,12 @@ struct FamilyView: View {
                     }
                     .accessibilityIdentifier("loansLink")
                     NavigationLink {
+                        TripsHomeView()
+                    } label: {
+                        Label("trips.title", systemImage: "airplane")
+                    }
+                    .accessibilityIdentifier("tripsLink")
+                    NavigationLink {
                         VaultHomeView()
                     } label: {
                         Label("vault.title", systemImage: "lock.doc")

@@ -117,4 +117,18 @@ final class OnboardingUITests: XCTestCase {
         done.tap()
         XCTAssertTrue(app.buttons["addVaultDocumentButton"].waitForExistence(timeout: 5))
     }
+
+    func testPlanATrip() {
+        let app = launch(["-signed-in"])
+        XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
+        openSection(app, "family")
+        app.buttons["tripsLink"].tap()
+        app.buttons["addTripButton"].tap()
+        let title = app.textFields["tripTitleField"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.tap()
+        title.typeText("Algarve")
+        app.buttons["saveTripButton"].tap()
+        XCTAssertTrue(app.staticTexts["Algarve"].waitForExistence(timeout: 5))
+    }
 }

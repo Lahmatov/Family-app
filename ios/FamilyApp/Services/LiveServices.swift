@@ -790,9 +790,64 @@ final class LiveLoanService: LoanServicing {
     }
 }
 
+final class LiveTripService: TripServicing {
+    private let client: SupabaseClient
+
+    init(client: SupabaseClient) {
+        self.client = client
+    }
+
+    func trips(familyId: UUID) async throws -> [Trip] {
+        try await run { try await self.client.from("trips").select().eq("family_id", value: familyId)
+            .order("starts_on").execute().value }
+    }
+
+    func items(familyId: UUID) async throws -> [TripItem] {
+        try await run { try await self.client.from("trip_items").select().eq("family_id", value: familyId)
+            .order("created_at").execute().value }
+    }
+
+    func add(familyId: UUID, _ trip: NewTrip) async throws {
+        struct Row: Encodable {
+            let family_id: UUID; let title: String; let destination: String; let starts_on: LocalDate
+            let ends_on: LocalDate; let currency: CurrencyCode; let budget_minor: Int64
+        }
+        try await run { try await self.client.from("trips").insert(Row(
+            family_id: familyId, title: trip.title, destination: trip.destination, starts_on: trip.startsOn,
+            ends_on: trip.endsOn, currency: trip.currency, budget_minor: trip.budgetMinor)).execute() }
+    }
+
+    func add(familyId: UUID, tripId: UUID, _ item: NewTripItem) async throws {
+        struct Row: Encodable {
+            let trip_id: UUID; let family_id: UUID; let kind: TripItemKind; let title: String
+            let day: LocalDate?; let cost_minor: Int64; let link: String?
+        }
+        try await run { try await self.client.from("trip_items").insert(Row(
+            trip_id: tripId, family_id: familyId, kind: item.kind, title: item.title, day: item.day,
+            cost_minor: item.costMinor, link: item.link)).execute() }
+    }
+
+    func setDone(_ item: TripItem, done: Bool) async throws {
+        try await run { try await self.client.from("trip_items").update(["is_done": done])
+            .eq("id", value: item.id).execute() }
+    }
+
+    func delete(_ trip: Trip) async throws {
+        try await run { try await self.client.from("trips").delete().eq("id", value: trip.id).execute() }
+    }
+
+    func delete(_ item: TripItem) async throws {
+        try await run { try await self.client.from("trip_items").delete().eq("id", value: item.id).execute() }
+    }
+
+    private func run<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+        do { return try await operation() } catch { throw mapError(error) }
+    }
+}
+
 // MARK: - Misconfigured
 
-struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing {
+struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, ListingServicing, ChildServicing, GoalServicing, NoteServicing, LoanServicing, TripServicing {
     func currentUser() async -> (id: UUID, email: String?)? { nil }
     func signIn(email: String, password: String) async throws { throw AppError.invalidConfiguration }
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpOutcome {
@@ -884,4 +939,11 @@ struct MisconfiguredService: AuthServicing, FamilyServicing, BudgetServicing, Li
         throw AppError.invalidConfiguration
     }
     func delete(_ loan: Loan) async throws { throw AppError.invalidConfiguration }
+    func trips(familyId: UUID) async throws -> [Trip] { throw AppError.invalidConfiguration }
+    func items(familyId: UUID) async throws -> [TripItem] { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, _ trip: NewTrip) async throws { throw AppError.invalidConfiguration }
+    func add(familyId: UUID, tripId: UUID, _ item: NewTripItem) async throws { throw AppError.invalidConfiguration }
+    func setDone(_ item: TripItem, done: Bool) async throws { throw AppError.invalidConfiguration }
+    func delete(_ trip: Trip) async throws { throw AppError.invalidConfiguration }
+    func delete(_ item: TripItem) async throws { throw AppError.invalidConfiguration }
 }

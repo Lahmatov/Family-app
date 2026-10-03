@@ -35,6 +35,8 @@ actor InMemoryStore {
     var loanRates: [LoanRateChangeRow] = []
     var loanExtras: [LoanExtraRow] = []
     var loanPaid: [LoanPaidRow] = []
+    var tripRows: [Trip] = []
+    var tripItemRows: [TripItem] = []
 
     init(signedIn: Bool) {
         self.signedIn = signedIn
@@ -270,6 +272,38 @@ actor InMemoryStore {
         if paid { loanPaid.append(LoanPaidRow(loanId: loanId, installmentNo: number, paidOn: day)) }
     }
 
+    func addTrip(familyId: UUID, _ new: NewTrip) throws {
+        try requireAdult(familyId)
+        guard new.endsOn >= new.startsOn, new.budgetMinor >= 0 else { throw AppError.unknown }
+        tripRows.append(Trip(id: UUID(), familyId: familyId, title: new.title, destination: new.destination,
+                             startsOn: new.startsOn, endsOn: new.endsOn, currency: new.currency, budgetMinor: new.budgetMinor, notes: nil))
+    }
+
+    func addTripItem(familyId: UUID, tripId: UUID, _ new: NewTripItem) throws {
+        try requireAdult(familyId)
+        guard tripRows.contains(where: { $0.id == tripId && $0.familyId == familyId }), new.costMinor >= 0 else { throw AppError.forbidden }
+        tripItemRows.append(TripItem(id: UUID(), tripId: tripId, kind: new.kind, title: new.title, day: new.day,
+                                     costMinor: new.costMinor, isDone: false, link: new.link))
+    }
+
+    func setTripItemDone(_ item: TripItem, done: Bool) throws {
+        guard let trip = tripRows.first(where: { $0.id == item.tripId }) else { throw AppError.notFound }
+        try requireAdult(trip.familyId)
+        if let index = tripItemRows.firstIndex(where: { $0.id == item.id }) { tripItemRows[index].isDone = done }
+    }
+
+    func deleteTrip(_ trip: Trip) throws {
+        try requireAdult(trip.familyId)
+        tripRows.removeAll { $0.id == trip.id }
+        tripItemRows.removeAll { $0.tripId == trip.id }
+    }
+
+    func deleteTripItem(_ item: TripItem) throws {
+        guard let trip = tripRows.first(where: { $0.id == item.tripId }) else { throw AppError.notFound }
+        try requireAdult(trip.familyId)
+        tripItemRows.removeAll { $0.id == item.id }
+    }
+
     func deleteLoan(_ loan: Loan) throws {
         try requireAdult(loan.familyId)
         loanRows.removeAll { $0.id == loan.id }
@@ -457,5 +491,27 @@ final class InMemoryLoanService: LoanServicing {
         try await store.setLoanPaid(familyId: familyId, loanId: loanId, number: number, paid: paid, on: day)
     }
     func delete(_ loan: Loan) async throws { try await store.deleteLoan(loan) }
+}
+
+final class InMemoryTripService: TripServicing {
+    let store: InMemoryStore
+    init(store: InMemoryStore) { self.store = store }
+
+    func trips(familyId: UUID) async throws -> [Trip] {
+        try await store.requireAdult(familyId)
+        return await store.tripRows.filter { $0.familyId == familyId }
+    }
+    func items(familyId: UUID) async throws -> [TripItem] {
+        try await store.requireAdult(familyId)
+        let ids = await Set(store.tripRows.filter { $0.familyId == familyId }.map(\.id))
+        return await store.tripItemRows.filter { ids.contains($0.tripId) }
+    }
+    func add(familyId: UUID, _ trip: NewTrip) async throws { try await store.addTrip(familyId: familyId, trip) }
+    func add(familyId: UUID, tripId: UUID, _ item: NewTripItem) async throws {
+        try await store.addTripItem(familyId: familyId, tripId: tripId, item)
+    }
+    func setDone(_ item: TripItem, done: Bool) async throws { try await store.setTripItemDone(item, done: done) }
+    func delete(_ trip: Trip) async throws { try await store.deleteTrip(trip) }
+    func delete(_ item: TripItem) async throws { try await store.deleteTripItem(item) }
 }
 #endif

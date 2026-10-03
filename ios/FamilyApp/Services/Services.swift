@@ -46,6 +46,7 @@ struct Services: Sendable {
     let goals: any GoalServicing
     let notes: any NoteServicing
     let loans: any LoanServicing
+    let trips: any TripServicing
     let vault: any VaultServicing
     let vaultIdentities: any VaultIdentityStoring
 
@@ -66,6 +67,7 @@ struct Services: Sendable {
                 goals: LiveGoalService(client: client),
                 notes: LiveNoteService(client: client),
                 loans: LiveLoanService(client: client),
+                trips: LiveTripService(client: client),
                 vault: LiveVaultService(client: client),
                 vaultIdentities: KeychainVaultIdentityStore()
             )
@@ -85,6 +87,7 @@ struct Services: Sendable {
                         goals: InMemoryGoalService(store: store),
                         notes: InMemoryNoteService(store: store),
                         loans: InMemoryLoanService(store: store),
+                        trips: InMemoryTripService(store: store),
                         vault: InMemoryVaultService(backend: InMemoryVaultBackend(), userId: store.userId),
                         vaultIdentities: InMemoryIdentityStore())
     }
@@ -95,6 +98,7 @@ struct Services: Sendable {
                                         budget: MisconfiguredService(), listings: MisconfiguredService(),
                                         children: MisconfiguredService(), goals: MisconfiguredService(),
                                         notes: MisconfiguredService(), loans: MisconfiguredService(),
+                                        trips: MisconfiguredService(),
                                         vault: MisconfiguredVault(), vaultIdentities: MisconfiguredVault())
 }
 
@@ -136,6 +140,16 @@ protocol NoteServicing: Sendable {
     func add(familyId: UUID, title: String, body: String, isPrivate: Bool) async throws
     func update(_ note: Note) async throws
     func delete(_ note: Note) async throws
+}
+
+protocol TripServicing: Sendable {
+    func trips(familyId: UUID) async throws -> [Trip]
+    func items(familyId: UUID) async throws -> [TripItem]
+    func add(familyId: UUID, _ trip: NewTrip) async throws
+    func add(familyId: UUID, tripId: UUID, _ item: NewTripItem) async throws
+    func setDone(_ item: TripItem, done: Bool) async throws
+    func delete(_ trip: Trip) async throws
+    func delete(_ item: TripItem) async throws
 }
 
 protocol LoanServicing: Sendable {
