@@ -26,6 +26,17 @@ final class OnboardingUITests: XCTestCase {
         }
     }
 
+    /// Links in the Family list: wait for the screen, and scroll when the link is below the fold
+    /// (the list is lazy, so an off-screen row is not in the hierarchy at all).
+    private func tapLink(_ app: XCUIApplication, _ id: String) {
+        let link = app.buttons[id]
+        for _ in 0..<4 where !link.waitForExistence(timeout: 3) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(link.exists, "\(id) not found")
+        link.tap()
+    }
+
     private func signIn(_ app: XCUIApplication, password: String) {
         let email = app.textFields["emailField"]
         XCTAssertTrue(email.waitForExistence(timeout: 5))
@@ -91,7 +102,7 @@ final class OnboardingUITests: XCTestCase {
         let app = launch(["-signed-in"])
         XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
         openSection(app, "family")
-        app.buttons["settingsLink"].tap()
+        tapLink(app, "settingsLink")
         app.buttons["signOutButton"].tap()
         XCTAssertTrue(app.textFields["emailField"].waitForExistence(timeout: 5))
     }
@@ -100,7 +111,7 @@ final class OnboardingUITests: XCTestCase {
         let app = launch(["-signed-in"])
         XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
         openSection(app, "family")
-        app.buttons["vaultLink"].tap()
+        tapLink(app, "vaultLink")
         let create = app.buttons["createVaultButton"]
         XCTAssertTrue(create.waitForExistence(timeout: 5))
         create.tap()
@@ -122,7 +133,7 @@ final class OnboardingUITests: XCTestCase {
         let app = launch(["-signed-in"])
         XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
         openSection(app, "family")
-        app.buttons["tripsLink"].tap()
+        tapLink(app, "tripsLink")
         app.buttons["addTripButton"].tap()
         let title = app.textFields["tripTitleField"]
         XCTAssertTrue(title.waitForExistence(timeout: 5))
@@ -136,7 +147,7 @@ final class OnboardingUITests: XCTestCase {
         let app = launch(["-signed-in"])
         XCTAssertTrue(app.buttons["addTransactionButton"].waitForExistence(timeout: 5))
         openSection(app, "family")
-        app.buttons["settingsLink"].tap()
+        tapLink(app, "settingsLink")
         app.buttons["eraseAccountButton"].tap()
         let confirm = app.buttons["Delete everything"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))
