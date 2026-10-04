@@ -10153,19 +10153,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No advertising, no analytics, no tracking. Your data is not sold and is not passed on except to the services needed to run the app: hosting, email, and Apple's address lookup (the text of an apartment address is sent to Apple to place it on the map)."
+            "value": "No advertising, no analytics, no tracking. Your data is not sold and is not passed on except to the services needed to run the app: hosting, email, Apple's address lookup (the text of an apartment address is sent to Apple to place it on the map) and exchange rates (only the currency pair and the date are sent to Frankfurter, which publishes the ECB rates)."
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sem publicidade, sem análises, sem rastreio. Os dados não são vendidos nem cedidos, exceto aos serviços necessários ao funcionamento: alojamento, email e a pesquisa de moradas da Apple (o texto da morada de uma casa é enviado à Apple para a colocar no mapa)."
+            "value": "Sem publicidade, sem análises, sem rastreio. Os dados não são vendidos nem cedidos, exceto aos serviços necessários ao funcionamento: alojamento, email, a pesquisa de moradas da Apple (o texto da morada de uma casa é enviado à Apple para a colocar no mapa) e as taxas de câmbio (só o par de moedas e a data são enviados ao Frankfurter, que publica as taxas do BCE)."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нет рекламы, аналитики и слежки. Данные не продаются и не передаются никому, кроме сервисов, нужных для работы приложения: хостинг, почта и поиск адреса у Apple (текст адреса квартиры отправляется Apple, чтобы поставить точку на карте)."
+            "value": "Нет рекламы, аналитики и слежки. Данные не продаются и не передаются никому, кроме сервисов, нужных для работы приложения: хостинг, почта, поиск адреса у Apple (текст адреса квартиры отправляется Apple, чтобы поставить точку на карте) и курсы валют (в Frankfurter, который публикует курсы ЕЦБ, уходят только пара валют и дата)."
           }
         }
       }
@@ -10320,6 +10320,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Обновлено: 3 октября 2026"
+          }
+        }
+      }
+    },
+    "budget.rate.ecb %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ECB reference rate of %@. You can change it."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taxa de referência do BCE de %@. Pode alterá-la."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Курс ЕЦБ на %@. Можно изменить."
           }
         }
       }

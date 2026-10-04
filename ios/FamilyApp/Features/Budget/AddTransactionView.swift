@@ -12,6 +12,8 @@ struct AddTransactionView: View {
     @State private var draft: TransactionDraft
     @State private var date = Date()
     @State private var rateText = ""
+    /// The rate shown came from the ECB, not from the person; it is replaced when the currency or date changes.
+    @State private var suggested: ReferenceRate?
     @State private var photoItem: PhotosPickerItem?
     @State private var receipt: ReceiptUpload?
     @State private var action = AsyncAction()
@@ -58,6 +60,11 @@ struct AddTransactionView: View {
                         TextField("budget.rate \(model.family.baseCurrency.rawValue) \(draft.currency.rawValue)",
                                   text: $rateText)
                             .keyboardType(.decimalPad)
+                            .onChange(of: rateText) { _, text in if text != suggested.map({ "\($0.rate)" }) { suggested = nil } }
+                        if let suggested {
+                            Text("budget.rate.ecb \(suggested.publishedOn.formatted(locale: locale))")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
                         if let preview {
                             Text("budget.inBase \(preview.amountInBase.formatted(locale: locale))")
                                 .font(.footnote).foregroundStyle(.secondary)
@@ -126,7 +133,18 @@ struct AddTransactionView: View {
                 Text(validationError?.messageKey ?? "")
             }
             .errorAlert(action)
+            .task(id: "\(draft.currency)-\(LocalDate(date))") { await suggestRate() }
         }
+    }
+
+    /// Prefills the ECB rate unless the person typed their own.
+    private func suggestRate() async {
+        let base = model.family.baseCurrency
+        guard draft.currency != base, rateText.isEmpty || suggested != nil else { return }
+        let rate = await ExchangeRateClient.referenceRate(from: draft.currency, to: base, on: LocalDate(date))
+        guard !Task.isCancelled, rateText.isEmpty || suggested != nil else { return }
+        suggested = rate
+        rateText = rate.map { "\($0.rate)" } ?? ""
     }
 
     private var currencyOptions: [CurrencyCode] {

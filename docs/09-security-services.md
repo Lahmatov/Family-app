@@ -43,7 +43,8 @@
 ### Проверки
 - [x] pgTAP, unit, UI, тесты на iPad
 - [ ] MobSF по готовой сборке
-- [ ] OWASP ZAP или Burp CE по API (IDOR, обход RLS через RPC, фаззинг)
+- [ ] strix (автоматически) и hoppscotch (вручную) по API staging: IDOR, обход RLS через RPC, фаззинг — `docs/12-pentest-plan.md`
+- [ ] sniffnet: приложение ходит только в Supabase, Frankfurter и Apple
 - [ ] Frida/objection на устройстве
 - [ ] Внешний пентест, если приложением начнут пользоваться вне семьи
 
