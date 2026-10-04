@@ -8,9 +8,11 @@ enum ExchangeRateClient {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-ui-testing") { return nil }   // UI tests stay offline
         #endif
-        guard let url = ExchangeRates.url(from: from, to: to, on: day, today: LocalDate(Date())) else { return nil }
+        let today = LocalDate(Date())
+        guard let url = ExchangeRates.url(from: from, to: to, on: day, today: today) else { return nil }
         var request = URLRequest(url: url, timeoutInterval: 8)
-        request.cachePolicy = .returnCacheDataElseLoad   // a past day's rate never changes
+        // A past day's rate never changes; today's appears in the afternoon, so ask again instead of reusing a cache.
+        request.cachePolicy = day < today ? .returnCacheDataElseLoad : .reloadIgnoringLocalCacheData
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
         return ExchangeRates.parse(data, to: to)

@@ -213,7 +213,7 @@ public enum ListingPageParser {
             for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
                 guard let whole = Range(match.range(at: 1), in: text), let end = Range(match.range, in: text)?.upperBound else { continue }
                 // "2.500 €/m²" is a price per square metre, not the price of the property.
-                if text[end...].drop(while: { $0 == " " }).hasPrefix("/") { continue }
+                if text[end...].drop(while: \.isWhitespace).hasPrefix("/") { continue }   // any space, also a non-breaking one
                 let digits = text[whole].filter(\.isNumber)
                 var cents = "00"
                 if let fraction = Range(match.range(at: 2), in: text) { cents = (text[fraction] + "0").prefix(2).description }

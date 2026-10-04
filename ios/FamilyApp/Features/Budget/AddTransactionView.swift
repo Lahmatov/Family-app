@@ -133,6 +133,8 @@ struct AddTransactionView: View {
                 Text(validationError?.messageKey ?? "")
             }
             .errorAlert(action)
+            // A rate belongs to one currency: typed or suggested, it must not carry over to another one.
+            .onChange(of: draft.currency) { _, _ in rateText = ""; suggested = nil }
             .task(id: "\(draft.currency)-\(LocalDate(date))") { await suggestRate() }
         }
     }

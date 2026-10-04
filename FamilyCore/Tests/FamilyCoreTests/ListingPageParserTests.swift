@@ -79,6 +79,7 @@ final class ListingPageParserTests: XCTestCase {
         XCTAssertNil(ListingPageParser.priceFromText("sem preço, 75 m²"))
         XCTAssertEqual(ListingPageParser.priceFromText("2.500 €/m², total 450.000 €"), 45_000_000, "a price per m² is skipped")
         XCTAssertNil(ListingPageParser.priceFromText("2.500 €/m2"))
+        XCTAssertEqual(ListingPageParser.priceFromText("2.500 €\u{00A0}/m², total 450.000 €"), 45_000_000, "non-breaking space before /m²")
         XCTAssertEqual(ListingPageParser.priceFromText("€ 450.000 (€ 2.500/m²)"), 45_000_000)
     }
 
