@@ -1,0 +1,24 @@
+name: Backend (DB + RLS)
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pgtap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Postgres 16 + pgTAP
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-16 postgresql-16-pgtap libtap-parser-sourcehandler-pgtap-perl
+          sudo systemctl stop postgresql || true
+      - name: Migrations + pgTAP tests (RLS, roles, MFA, tampering)
+        run: PG_BIN=/usr/lib/postgresql/16/bin ./scripts/db-test.sh

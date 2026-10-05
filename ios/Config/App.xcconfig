@@ -1,0 +1,6 @@
+// Non-secret build settings. Secrets live in Secrets.xcconfig (git-ignored).
+// Copy Secrets.example.xcconfig -> Secrets.xcconfig and fill it in.
+SUPABASE_URL = http:/$()/127.0.0.1:54321
+SUPABASE_ANON_KEY =
+
+#include? "Secrets.xcconfig"

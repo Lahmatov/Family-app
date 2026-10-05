@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: ru-RU
+reviews:
+  profile: chill
+  auto_review:
+    auto_pause_after_reviewed_commits: 30
+  path_instructions:
+    - path: "supabase/migrations/**"
+      instructions: >
+        Every table needs row level security, explicit revoke from anon/authenticated and minimal column-level
+        grants; policies go through private.has_role (which enforces MFA). Every SECURITY DEFINER function needs
+        `set search_path = ''`, qualified names and a role/MFA check first. Look for races (lock order: family row,
+        then request, then member rows), missing indexes behind policies, and PostgREST upserts (they need UPDATE on
+        every payload column).
+    - path: "supabase/tests/**"
+      instructions: Each new policy or RPC needs the allowed case and the forbidden case (other family, lower role, aal1).
+    - path: "ios/**/Services/**"
+      instructions: >
+        Money is Int64 minor units, never Double. Server text must not reach the user (mapError). A mutation that
+        RLS can silently filter must report it. Check retries for duplicates and partial failure.
+    - path: "ios/**"
+      instructions: >
+        Every user-facing string must be in Localizable.xcstrings for en, ru and pt-PT. Debug-only shortcuts
+        (-ui-testing) must be inside #if DEBUG. No logging of secrets or personal data.
+    - path: "FamilyCore/**"
+      instructions: Pure, Linux-testable domain logic. Check rounding, boundaries and that tests use the same numbers as the database tests.
