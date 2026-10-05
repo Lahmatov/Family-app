@@ -22,4 +22,4 @@
 ## Дальше
 - e2e против реального локального Supabase: `supabase start` + UI-тесты с live-сервисами (этап 2).
 - Нагрузочные проверки RLS (индексы под политики) по мере роста данных.
-- Пентест по `docs/03-security.md`.
+- Пентест по `docs/03-security.md` и `docs/12-pentest-plan.md`; автоматическая часть: `python3 scripts/pentest/api_pentest.py` против локального `supabase start` (около 700 атак на API).
